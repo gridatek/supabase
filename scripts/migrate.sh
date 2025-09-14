@@ -23,10 +23,8 @@ else
     fi
 
     # Run all migrations
-    for file in supabase/migrations/*.sql; do
-        echo "Applying migration: $(basename $file)"
-        supabase db push --file "$file"
-    done
+    echo "Applying all migrations..."
+    supabase db push --local
 fi
 
 echo "✅ Migrations completed successfully!"

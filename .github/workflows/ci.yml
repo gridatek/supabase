@@ -34,10 +34,7 @@ jobs:
           supabase db reset
 
       - name: Run migrations
-        run: |
-          for file in supabase/migrations/*.sql; do
-            supabase db push --file "$file"
-          done
+        run: supabase db push --local
 
       - name: Verify migrations applied
         run: |
@@ -63,10 +60,11 @@ jobs:
           supabase start
           supabase db reset
           
-          # Test each migration can be applied
-          for file in supabase/migrations/*.sql; do
-            echo "Testing migration: $file"
-            supabase db push --file "$file" --dry-run
-          done
+          # Test migrations can be applied
+          echo "Testing migrations with dry-run"
+          supabase db push --local --dry-run
+          
+          # Apply migrations
+          supabase db push --local
           
           supabase stop

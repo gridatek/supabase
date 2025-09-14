@@ -27,25 +27,17 @@ jobs:
 
       - name: Run migrations
         run: |
-          # Get current migration version
-          CURRENT_VERSION=$(supabase db remote list | tail -1 | awk '{print $1}')
-          echo "Current version: $CURRENT_VERSION"
-          
-          # Apply new migrations
-          for file in supabase/migrations/*.sql; do
-            MIGRATION_NAME=$(basename "$file")
-            if [[ "$MIGRATION_NAME" > "$CURRENT_VERSION" ]]; then
-              echo "Applying migration: $MIGRATION_NAME"
-              supabase db push --file "$file"
-            fi
-          done
+          echo "Applying new migrations to remote database..."
+          supabase db push
 
-      - name: Update database functions
+      - name: Deploy edge functions
         run: |
-          for file in supabase/functions/*.sql; do
-            echo "Updating function from: $file"
-            supabase db push --file "$file"
-          done
+          if [ -d "supabase/functions" ] && [ "$(ls -A supabase/functions)" ]; then
+            echo "Deploying edge functions..."
+            supabase functions deploy
+          else
+            echo "No edge functions to deploy"
+          fi
 
       - name: Generate TypeScript types
         run: |

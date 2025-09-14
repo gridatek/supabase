@@ -1,0 +1,101 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+  PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+
+jobs:
+  deploy-migrations:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link Supabase project
+        run: supabase link --project-ref $PROJECT_ID
+
+      - name: Run migrations
+        run: |
+          # Get current migration version
+          CURRENT_VERSION=$(supabase db remote list | tail -1 | awk '{print $1}')
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Apply new migrations
+          for file in supabase/migrations/*.sql; do
+            MIGRATION_NAME=$(basename "$file")
+            if [[ "$MIGRATION_NAME" > "$CURRENT_VERSION" ]]; then
+              echo "Applying migration: $MIGRATION_NAME"
+              supabase db push --file "$file"
+            fi
+          done
+
+      - name: Update database functions
+        run: |
+          for file in supabase/functions/*.sql; do
+            echo "Updating function from: $file"
+            supabase db push --file "$file"
+          done
+
+      - name: Generate TypeScript types
+        run: |
+          supabase gen types typescript --project-id $PROJECT_ID > types/supabase.ts
+
+      - name: Commit generated types
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: 'chore: update generated types'
+          file_pattern: types/supabase.ts
+
+  deploy-edge-functions:
+    runs-on: ubuntu-latest
+    needs: deploy-migrations
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy Edge Functions
+        run: |
+          supabase link --project-ref $PROJECT_ID
+          supabase functions deploy --project-ref $PROJECT_ID
+
+  health-check:
+    runs-on: ubuntu-latest
+    needs: [deploy-migrations, deploy-edge-functions]
+
+    steps:
+      - name: Check Supabase health
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://$PROJECT_ID.supabase.co/rest/v1/)
+          if [ $response -eq 200 ]; then
+            echo "Health check passed"
+          else
+            echo "Health check failed with status: $response"
+            exit 1
+          fi
+        env:
+          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+
+      - name: Notify deployment
+        uses: 8398a7/action-slack@v3
+        if: success()
+        with:
+          status: success
+          text: 'Supabase deployment completed successfully!'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}

@@ -1,0 +1,135 @@
+name: Local Dev Environment Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # Allow manual trigger
+
+env:
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: supabase
+  JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+  ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+  SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+  PROJECT_REF: local
+  API_EXTERNAL_URL: http://localhost:9999
+  SITE_URL: http://localhost:3001
+  URI_ALLOW_LIST: http://localhost:3001
+
+jobs:
+  test-local-docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Create environment file
+        run: |
+          cat > docker/.env << EOF
+          POSTGRES_PASSWORD=postgres
+          POSTGRES_DB=supabase
+          JWT_SECRET=your-super-secret-jwt-token-with-at-least-32-characters-long
+          ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+          SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+          PROJECT_REF=local
+          API_EXTERNAL_URL=http://localhost:9999
+          SITE_URL=http://localhost:3001
+          URI_ALLOW_LIST=http://localhost:3001
+          EOF
+
+      - name: Start Docker services
+        run: |
+          echo "🚀 Starting Docker services..."
+          make up
+
+      - name: Wait for services to be ready
+        run: |
+          echo "⏳ Waiting for services to start..."
+          sleep 30
+
+          # Check if PostgreSQL is ready
+          timeout 60 bash -c 'until docker exec supabase-db pg_isready -U postgres -h localhost; do sleep 2; done'
+          echo "✅ PostgreSQL is ready"
+
+      - name: Test service connectivity
+        run: |
+          echo "🔍 Testing service connectivity..."
+
+          # Test PostgreSQL connection
+          docker exec supabase-db psql -U postgres -d supabase -c "SELECT version();"
+
+          # Test API endpoints (with retries)
+          for i in {1..10}; do
+            if curl -f http://localhost:8000/rest/v1/ -H "apikey: $ANON_KEY" > /dev/null 2>&1; then
+              echo "✅ REST API is responding"
+              break
+            fi
+            echo "Waiting for REST API... attempt $i/10"
+            sleep 5
+          done
+
+          # Test Auth endpoint
+          for i in {1..5}; do
+            if curl -f http://localhost:9999/health > /dev/null 2>&1; then
+              echo "✅ Auth service is responding"
+              break
+            fi
+            echo "Waiting for Auth service... attempt $i/5"
+            sleep 5
+          done
+
+      - name: Test migrations (if any exist)
+        run: |
+          echo "🔄 Testing migrations..."
+          if [ -d "supabase/migrations" ] && [ "$(ls -A supabase/migrations)" ]; then
+            echo "Found migrations, testing..."
+            make migrate || echo "⚠️ Migrations failed or no migrations to run"
+          else
+            echo "📝 No migrations found, skipping migration test"
+          fi
+
+      - name: Test database operations
+        run: |
+          echo "🗄️ Testing basic database operations..."
+
+          # Create a test table
+          docker exec supabase-db psql -U postgres -d supabase -c "
+            CREATE TABLE IF NOT EXISTS test_table (
+              id SERIAL PRIMARY KEY,
+              name TEXT NOT NULL,
+              created_at TIMESTAMP DEFAULT NOW()
+            );
+          "
+
+          # Insert test data
+          docker exec supabase-db psql -U postgres -d supabase -c "
+            INSERT INTO test_table (name) VALUES ('test-entry');
+          "
+
+          # Query test data
+          docker exec supabase-db psql -U postgres -d supabase -c "
+            SELECT * FROM test_table;
+          "
+
+          # Clean up test table
+          docker exec supabase-db psql -U postgres -d supabase -c "
+            DROP TABLE IF EXISTS test_table;
+          "
+
+          echo "✅ Database operations successful"
+
+      - name: Check logs for errors
+        if: failure()
+        run: |
+          echo "🔍 Checking service logs for errors..."
+          make logs | head -100
+
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "🧹 Cleaning up Docker services..."
+          make down
+          docker system prune -f

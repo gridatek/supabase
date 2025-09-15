@@ -12,7 +12,7 @@ help:
 
 .PHONY: up
 up:
-	docker-compose -f docker/docker-compose.yml up -d
+	docker compose -f docker/compose.yml up -d
 	@echo "Waiting for services to be ready..."
 	@sleep 5
 	@echo "Services running at:"
@@ -23,12 +23,12 @@ up:
 
 .PHONY: down
 down:
-	docker-compose -f docker/docker-compose.yml down
+	docker compose -f docker/compose.yml down
 
 .PHONY: reset
 reset:
-	docker-compose -f docker/docker-compose.yml down -v
-	docker-compose -f docker/docker-compose.yml up -d
+	docker compose -f docker/compose.yml down -v
+	docker compose -f docker/compose.yml up -d
 	@sleep 5
 	./scripts/migrate.sh
 	./scripts/seed.sh
@@ -43,7 +43,7 @@ seed:
 
 .PHONY: logs
 logs:
-	docker-compose -f docker/docker-compose.yml logs -f
+	docker compose -f docker/compose.yml logs -f
 
 .PHONY: shell-db
 shell-db:

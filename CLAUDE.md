@@ -36,7 +36,7 @@ make test
 
 This is a modern Supabase setup using Docker for local development. The architecture consists of:
 
-### Core Services (docker/docker-compose.yml)
+### Core Services (docker/compose.yml)
 - **PostgreSQL Database** (port 5432): Main database with Supabase extensions
 - **PostgREST API** (port 3000): Auto-generated REST API from database schema
 - **Supabase Auth** (port 9999): Authentication service (GoTrue)
@@ -51,7 +51,7 @@ This is a modern Supabase setup using Docker for local development. The architec
 - **Migration Script**: `scripts/migrate.sh` handles both local and production migrations
 
 ### Key Configuration Files
-- `docker/docker-compose.yml`: Complete Supabase stack definition
+- `docker/compose.yml`: Complete Supabase stack definition
 - `supabase/config.toml`: Supabase CLI configuration
 - `Makefile`: Development commands and shortcuts
 

@@ -18,7 +18,7 @@ project/
 │   │   └── handle_new_user.sql
 │   └── config.toml
 ├── docker/
-│   ├── docker-compose.yml
+│   ├── compose.yml
 │   └── .env.example
 ├── scripts/
 │   ├── migrate.sh

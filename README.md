@@ -10,7 +10,7 @@ project/
 │   ├── migrations/         # Database migrations
 │   ├── seed.sql           # Seed data (optional)
 │   └── config.toml        # Supabase configuration
-├── docs/                  # Documentation
+├── docs/                  # Documentation (ordered guides)
 ├── package.json          # npm scripts
 ├── .gitignore
 └── README.md
@@ -140,3 +140,26 @@ This setup uses Supabase CLI which automatically manages:
 - Use `npm run logs` to debug issues
 - Generate TypeScript types with `npm run types`
 - Link to production with `npm run link`
+
+## Documentation
+
+Comprehensive guides are available in the `docs/` folder:
+
+1. **[Getting Started](./docs/01_GETTING_STARTED.md)** - Installation, setup, and first steps
+2. **[Migrations](./docs/02_MIGRATIONS.md)** - Database migrations and schema management
+3. **[CI/CD](./docs/03_CI_CD.md)** - GitHub Actions workflows and automation
+4. **[Deployment](./docs/04_DEPLOYMENT.md)** - Production deployment guide
+5. **[Angular Integration](./docs/05_ANGULAR_INTEGRATION.md)** - Add Angular frontend to the template
+
+📖 **[View all documentation](./docs/README.md)**
+
+## What You Get
+
+✅ **Cross-platform**: Works on Windows, Mac, and Linux
+✅ **Docker-based**: Local development with all Supabase services
+✅ **Version-controlled migrations**: Track database changes in git
+✅ **Seed data**: Test users and data for development
+✅ **Multi-platform CI/CD**: Automated testing on Ubuntu, Windows, macOS
+✅ **Health checks**: Automated API and database validation
+✅ **Production ready**: Deploy to Supabase with one command
+✅ **Well documented**: Comprehensive guides for every feature

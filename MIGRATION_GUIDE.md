@@ -46,11 +46,15 @@ That's it! No environment files, no Docker commands, no Make needed.
 
 ## What Was Removed
 
+✅ **All deleted for simplicity:**
+
 - ❌ `Makefile` - Replaced with `package.json` scripts
-- ❌ `scripts/migrate.sh` - Supabase CLI handles this
-- ❌ `scripts/seed.sh` - Use Supabase CLI directly
-- ❌ `docker/compose.yml` - Supabase CLI manages Docker
-- ❌ `docker/.env` - Configuration in `supabase/config.toml`
+- ❌ `scripts/` folder - Supabase CLI handles migrations
+- ❌ `docker/` folder - Supabase CLI manages Docker automatically
+
+Everything is now in:
+- `package.json` - All commands
+- `supabase/config.toml` - All configuration
 
 ## What Stays
 

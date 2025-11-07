@@ -5,48 +5,26 @@
 ```
 project/
 ├── .github/
-│   └── workflows/
-│       ├── ci.yml
-│       ├── local-dev-test.yml
-│       └── deploy.yml
+│   └── workflows/          # CI/CD workflows
 ├── supabase/
-│   ├── migrations/
-│   │   ├── 00001_create_users_table.sql
-│   │   ├── 00002_create_posts_table.sql
-│   │   └── 00003_add_user_profiles.sql
-│   ├── seed.sql
-│   ├── functions/
-│   │   └── handle_new_user.sql
-│   └── config.toml
-├── docker/
-│   ├── compose.yml
-│   └── .env.example
-├── scripts/
-│   ├── migrate.sh
-│   └── seed.sh
-├── .env.local
+│   ├── migrations/         # Database migrations
+│   ├── seed.sql           # Seed data (optional)
+│   └── config.toml        # Supabase configuration
+├── docs/                  # Documentation
+├── package.json          # npm scripts
 ├── .gitignore
-├── Dockerfile
 └── README.md
 ```
 
 ## Quick Start Guide
 
 ```bash
-# 1. Clone the repository
+# Clone and start in 3 commands
 git clone https://github.com/gridatek/supabase.git
 cd supabase
-
-# 2. Install Supabase CLI
-npm install -g supabase
-
-# 3. Initialize and start Supabase
 npm run dev
 
-# 4. Check service status
-npm run status
-
-# That's it! Supabase is now running locally
+# That's it! Supabase is running
 ```
 
 ## Development Commands
@@ -90,15 +68,11 @@ npm run link
 
 ## Service Endpoints
 
-Once running, services are available at:
+Once running (`npm run dev`), services are available at:
 
-- **API Gateway**: http://localhost:8000
-- **PostgREST API**: http://localhost:3000
-- **Auth Service**: http://localhost:9999
-- **Realtime**: http://localhost:4000
-- **Storage**: http://localhost:5000
-- **Database**: postgresql://localhost:5432
-- **MailHog**: http://localhost:8025
+- **API Gateway**: http://localhost:54321 (all services route through here)
+- **Database**: Check `npm run status` for connection string
+- **Email UI (Inbucket)**: http://localhost:54324
 
 ## CI/CD Workflows
 
@@ -115,35 +89,25 @@ Once running, services are available at:
 
 ## Architecture
 
-This setup uses Docker Compose with the latest Supabase service versions:
+This setup uses Supabase CLI which automatically manages:
 
-- **PostgreSQL**: 15.8.1.060
-- **PostgREST**: v12.2.12
-- **GoTrue (Auth)**: v2.177.0
-- **Realtime**: v2.34.47
-- **Storage API**: v1.25.7
-- **Kong Gateway**: 3.9.1
+- **PostgreSQL** - Database with extensions
+- **PostgREST** - Auto-generated REST API
+- **GoTrue** - Authentication service
+- **Realtime** - Real-time subscriptions
+- **Storage** - File storage service
+- **Kong** - API gateway
 
-## Tips & Best Practices
+## Best Practices
 
-### Database
-1. **Migration Naming**: Use sequential numbers (00001, 00002) for migration ordering
-2. **RLS Policies**: Always enable Row Level Security on tables
-3. **Indexes**: Create indexes for frequently queried columns
-4. **Functions**: Keep database functions in separate files for reusability
+### Migrations
+- Use 5-digit sequential numbering (00000, 00001, 00002, etc.)
+- Test locally with `npm run reset` before production
+- Always enable Row Level Security (RLS) on tables
+- Use `npm run diff` to check changes before applying
 
 ### Development
-5. **Local Testing**: Use `make up` for Docker environment, Supabase CLI for migrations
-6. **Environment Files**: Keep `.env` files updated with proper secrets
-7. **Service Health**: Check service endpoints are responding before running tests
-
-### Deployment
-8. **Testing**: Test migrations locally before deploying to production
-9. **Rollback Plan**: Keep rollback scripts for critical migrations
-10. **Monitoring**: Set up alerts for failed migrations in production
-11. **Documentation**: Document complex migrations and their purposes
-
-### Version Management
-- Docker images are pinned to specific versions for security
-- GitHub Actions use latest stable versions (v5)
-- Update versions monthly or as needed for security patches
+- Run `npm run status` to check all services
+- Use `npm run logs` to debug issues
+- Generate TypeScript types with `npm run types`
+- Link to production with `npm run link`

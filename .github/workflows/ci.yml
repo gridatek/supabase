@@ -56,18 +56,8 @@ jobs:
       - run: npm run diff
         shell: bash
 
-      - name: Setup admin user for tests
+      - run: npm run seed
         shell: bash
-        run: |
-          # Add is_admin column and set alice as admin
-          supabase db execute --sql "
-            ALTER TABLE public.profiles
-            ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false;
-
-            UPDATE public.profiles
-            SET is_admin = true
-            WHERE email = 'alice@example.com';
-          "
 
       - name: Start Edge Functions
         shell: bash

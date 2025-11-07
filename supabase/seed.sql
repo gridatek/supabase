@@ -81,7 +81,8 @@ UPDATE public.profiles SET
     bio = 'Software engineer passionate about web development',
     website = 'https://alice.dev',
     social_links = '{"github": "alice", "twitter": "alice_dev"}',
-    is_verified = true
+    is_verified = true,
+    is_admin = true  -- Alice is an admin for testing
 WHERE id = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
 UPDATE public.profiles SET

@@ -20,26 +20,16 @@ npm install @supabase/supabase-js
 
 ### Configure Supabase Connection
 
-Create `frontend/src/app/supabase.ts`:
-
-```typescript
-import { createClient } from '@supabase/supabase-js'
-
-export const supabase = createClient(
-  'http://localhost:54321',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-)
-```
-
-> **Note**: The API key shown is the default Supabase CLI key for local development only.
-
-### Use in Components
-
 Update `frontend/src/app/app.component.ts`:
 
 ```typescript
 import { Component, OnInit } from '@angular/core'
-import { supabase } from './supabase'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  'http://localhost:54321',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+)
 
 @Component({
   selector: 'app-root',
@@ -59,6 +49,8 @@ export class AppComponent implements OnInit {
 }
 ```
 
+> **Note**: The API key shown is the default Supabase CLI key for local development only.
+
 ## Monorepo Structure
 
 Your project should now look like this:
@@ -68,7 +60,7 @@ project/
 ├── frontend/                 # Angular app
 │   ├── src/
 │   │   └── app/
-│   │       └── supabase.ts  # Supabase client
+│   │       └── app.component.ts  # Includes Supabase client
 │   ├── angular.json
 │   └── package.json
 ├── supabase/                # Supabase backend
@@ -129,7 +121,37 @@ console.log(data) // Should show Alice, Bob, Carol
 
 ### Environment Variables
 
-For production, use environment variables.
+For production, update your component to use environment variables.
+
+Update `frontend/src/app/app.component.ts`:
+
+```typescript
+import { Component, OnInit } from '@angular/core'
+import { createClient } from '@supabase/supabase-js'
+import { environment } from '../environments/environment'
+
+const supabase = createClient(
+  environment.supabaseUrl,
+  environment.supabaseKey
+)
+
+@Component({
+  selector: 'app-root',
+  template: `
+    <h1>Supabase + Angular</h1>
+    <div *ngFor="let user of users">{{ user.email }}</div>
+  `,
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent implements OnInit {
+  users: any[] = []
+
+  async ngOnInit() {
+    const { data } = await supabase.from('users').select('*')
+    if (data) this.users = data
+  }
+}
+```
 
 Create `frontend/src/environments/environment.ts`:
 
@@ -149,18 +171,6 @@ export const environment = {
   supabaseUrl: 'https://your-project.supabase.co',
   supabaseKey: 'your-production-anon-key'
 }
-```
-
-Update `frontend/src/app/supabase.ts`:
-
-```typescript
-import { createClient } from '@supabase/supabase-js'
-import { environment } from '../environments/environment'
-
-export const supabase = createClient(
-  environment.supabaseUrl,
-  environment.supabaseKey
-)
 ```
 
 Get production credentials from:

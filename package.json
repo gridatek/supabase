@@ -1,6 +1,6 @@
 {
   "name": "supabase-template",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "Modern Supabase template with migrations & CI/CD",
   "scripts": {
     "dev": "supabase start",

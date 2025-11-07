@@ -11,14 +11,14 @@ This guide shows how to add Angular to your Supabase template as a monorepo setu
 npm install -g @angular/cli
 
 # Create Angular app
-ng new frontend --skip-git --defaults
+ng new frontend --skip-git --defaults --inline-style --inline-template --skip-tests
 
 # Install Supabase client
 cd frontend
 npm install @supabase/supabase-js
 ```
 
-> **Note**: Uses `--skip-git` since we're in a monorepo, and `--defaults` to skip all prompts.
+> **Note**: Uses `--skip-git` (monorepo), `--defaults` (no prompts), `--inline-style` and `--inline-template` (no separate files), and `--skip-tests` (simpler setup).
 
 ### Configure Supabase Connection
 

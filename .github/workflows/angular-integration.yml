@@ -74,11 +74,13 @@ jobs:
             selector: 'app-root',
             template: `
               <h1>Supabase + Angular</h1>
-              <div *ngFor="let user of users">{{ user.email }}</div>
+              @for (user of users; track user.id) {
+                <div>{{ user.email }}</div>
+              }
             `,
-            styleUrls: ['./app.component.css']
+            styles: []
           })
-          export class AppComponent implements OnInit {
+          export class App implements OnInit {
             users: any[] = []
 
             async ngOnInit() {

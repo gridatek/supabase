@@ -35,11 +35,13 @@ const supabase = createClient(
   selector: 'app-root',
   template: `
     <h1>Supabase + Angular</h1>
-    <div *ngFor="let user of users">{{ user.email }}</div>
+    @for (user of users; track user.id) {
+      <div>{{ user.email }}</div>
+    }
   `,
-  styleUrls: ['./app.component.css']
+  styles: []
 })
-export class AppComponent implements OnInit {
+export class App implements OnInit {
   users: any[] = []
 
   async ngOnInit() {
@@ -49,7 +51,7 @@ export class AppComponent implements OnInit {
 }
 ```
 
-> **Note**: The API key shown is the default Supabase CLI key for local development only.
+> **Note**: Uses Angular's modern standalone components and `@for` control flow. The API key shown is the default Supabase CLI key for local development only.
 
 ## Monorepo Structure
 
@@ -139,11 +141,13 @@ const supabase = createClient(
   selector: 'app-root',
   template: `
     <h1>Supabase + Angular</h1>
-    <div *ngFor="let user of users">{{ user.email }}</div>
+    @for (user of users; track user.id) {
+      <div>{{ user.email }}</div>
+    }
   `,
-  styleUrls: ['./app.component.css']
+  styles: []
 })
-export class AppComponent implements OnInit {
+export class App implements OnInit {
   users: any[] = []
 
   async ngOnInit() {

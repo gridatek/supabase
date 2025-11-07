@@ -5,12 +5,12 @@
 ```
 project/
 ├── .github/
-│   └── workflows/          # CI/CD workflows
+│   └── workflows/        # CI/CD workflows
 ├── supabase/
-│   ├── migrations/         # Database migrations
-│   ├── seed.sql           # Seed data (optional)
-│   └── config.toml        # Supabase configuration
-├── docs/                  # Documentation (ordered guides)
+│   ├── migrations/       # Database migrations
+│   ├── seed.sql          # Seed data (optional)
+│   └── config.toml       # Supabase configuration
+├── docs/                 # Documentation (ordered guides)
 ├── package.json          # npm scripts
 ├── .gitignore
 └── README.md

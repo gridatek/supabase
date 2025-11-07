@@ -35,15 +35,21 @@ export const supabase = createClient(
 
 ### Use in Components
 
+Update `frontend/src/app/app.component.ts`:
+
 ```typescript
 import { Component, OnInit } from '@angular/core'
 import { supabase } from './supabase'
 
 @Component({
-  selector: 'app-my-component',
-  template: `<div *ngFor="let user of users">{{ user.email }}</div>`
+  selector: 'app-root',
+  template: `
+    <h1>Supabase + Angular</h1>
+    <div *ngFor="let user of users">{{ user.email }}</div>
+  `,
+  styleUrls: ['./app.component.css']
 })
-export class MyComponent implements OnInit {
+export class AppComponent implements OnInit {
   users: any[] = []
 
   async ngOnInit() {

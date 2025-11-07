@@ -114,9 +114,11 @@ jobs:
         if: steps.check.outputs.exists == 'false'
         shell: bash
         run: |
+          # Start Angular in background
           cd frontend
           npx ng serve --port 4200 &
           ANGULAR_PID=$!
+          cd ..
 
           echo "Waiting for Angular to start..."
           sleep 10
@@ -124,8 +126,8 @@ jobs:
           # Test if Angular is serving
           curl -f http://localhost:4200 || exit 1
 
-          # Test Supabase API
-          API_URL=$(npm run status | grep "API URL" | awk '{print $3}')
+          # Test Supabase API from root directory
+          API_URL=$(supabase status | grep "API URL" | awk '{print $3}')
           curl -f "$API_URL/rest/v1/profiles?select=count" || exit 1
 
           kill $ANGULAR_PID

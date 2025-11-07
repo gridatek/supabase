@@ -8,27 +8,37 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
 
-      - name: Start Supabase and run migrations
-        run: |
-          echo "🚀 Starting Supabase..."
-          supabase start
+      - name: Start Supabase
+        shell: bash
+        run: npm run dev
 
-          echo "🔄 Running migrations..."
-          supabase db push --local
+      - name: Run migrations
+        shell: bash
+        run: npm run migrate
 
-          echo "✅ Verifying migrations..."
-          supabase db diff --schema public --use-migra
+      - name: Verify migrations
+        shell: bash
+        run: npm run diff
 
       - name: Cleanup
         if: always()
-        run: supabase stop
+        shell: bash
+        run: npm run stop

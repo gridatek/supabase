@@ -37,64 +37,55 @@ project/
 git clone https://github.com/gridatek/supabase.git
 cd supabase
 
-# 2. Copy environment files
-cp docker/.env.example docker/.env
-cp .env.example .env.local
-
-# 3. Generate secrets
-# For JWT_SECRET, ANON_KEY, and SERVICE_KEY:
-openssl rand -base64 32
-
-# 4. Start services with Docker
-make up
-
-# 5. Run migrations (if any exist)
-make migrate
-
-# 6. Seed database (optional)
-make seed
-
-# 7. Install Supabase CLI (for local development)
+# 2. Install Supabase CLI
 npm install -g supabase
 
-# 8. Initialize Supabase project
-supabase init
-
-# 9. Link to remote project (if you have one)
-supabase link --project-ref your-project-id
-
-# 10. Start development
+# 3. Initialize and start Supabase
 npm run dev
+
+# 4. Check service status
+npm run status
+
+# That's it! Supabase is now running locally
 ```
 
 ## Development Commands
 
-This project uses a Makefile for common operations:
+All commands work on Windows, Mac, and Linux:
 
 ```bash
-# Start all services (Docker Compose)
-make up
+# Start Supabase locally
+npm run dev
 
-# Stop all services
-make down
+# Stop Supabase
+npm run stop
 
-# Reset database and run migrations
-make reset
+# Reset database (drops all data and re-runs migrations)
+npm run reset
 
-# Run migrations only
-make migrate
+# Apply migrations locally
+npm run migrate
 
-# Seed database
-make seed
+# Apply migrations to production
+npm run migrate:prod
+
+# View database diff
+npm run diff
+
+# Check service status
+npm run status
 
 # View logs
-make logs
+npm run logs
 
-# Open PostgreSQL shell
-make shell-db
+# Open database shell
+npm run shell
 
-# Run tests
-make test
+# Generate TypeScript types
+npm run types
+
+# Link to production project
+npm run link
 ```
 
 ## Service Endpoints

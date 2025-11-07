@@ -63,52 +63,23 @@ jobs:
           };
           EOF
 
-      - name: Create Supabase environment
-        shell: bash
-        run: |
-          cat > docker/.env << 'EOF'
-          POSTGRES_PASSWORD=postgres
-          POSTGRES_DB=supabase
-          JWT_SECRET=your-super-secret-jwt-token-with-at-least-32-characters-long
-          ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
-          SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
-          PROJECT_REF=local
-          API_EXTERNAL_URL=http://localhost:8000
-          SITE_URL=http://localhost:4200
-          URI_ALLOW_LIST=http://localhost:4200
-          ENABLE_EMAIL=true
-          MAILER_AUTOCONFIRM=true
-          SMTP_HOST=mailhog
-          SMTP_PORT=1025
-          SMTP_ADMIN_EMAIL=admin@example.com
-          DISABLE_SIGNUP=false
-          EOF
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
       - name: Start Supabase
         shell: bash
-        run: make up
+        run: npm run dev
 
-      - name: Wait for services
+      - name: Update Angular environment with Supabase URL
+        if: steps.check.outputs.exists == 'true'
         shell: bash
         run: |
-          echo "⏳ Waiting for services..."
-
-          # Cross-platform wait
-          for i in {1..60}; do
-            if docker exec supabase-db pg_isready -U postgres -h localhost > /dev/null 2>&1; then
-              echo "✅ PostgreSQL ready"
-              break
-            fi
-            sleep 2
-          done
-
-          for i in {1..60}; do
-            if curl -f http://localhost:8000/rest/v1/ -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" > /dev/null 2>&1; then
-              echo "✅ API ready"
-              break
-            fi
-            sleep 2
-          done
+          # Update environment file with correct Supabase URL (CLI uses port 54321)
+          if [ -f "frontend/src/environments/environment.ts" ]; then
+            sed -i.bak "s|http://localhost:8000|http://localhost:54321|g" frontend/src/environments/environment.ts
+          fi
 
       - name: Install dependencies
         shell: bash
@@ -128,9 +99,9 @@ jobs:
       - name: Show logs on failure
         if: failure()
         shell: bash
-        run: docker compose -f docker/compose.yml logs --tail 50
+        run: npm run logs
 
       - name: Cleanup
         if: always()
         shell: bash
-        run: make down
+        run: npm run stop

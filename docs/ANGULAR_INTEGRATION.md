@@ -38,8 +38,8 @@ Create environment files for Angular:
 export const environment = {
   production: false,
   supabase: {
-    url: 'http://localhost:8000',
-    anonKey: 'your-anon-key-from-docker-env'
+    url: 'http://localhost:54321',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
   }
 };
 ```
@@ -55,7 +55,7 @@ export const environment = {
 };
 ```
 
-> **Note**: Get the `ANON_KEY` from your `docker/.env` file for local development.
+> **Note**: The anon key above is the default Supabase CLI key. Get it from `npm run status` or use the default shown.
 
 ### 4. Create Supabase Service
 
@@ -387,9 +387,9 @@ frontend/
 
 ### Running the Full Stack
 
-1. **Start Supabase services**:
+1. **Start Supabase** (from project root):
    ```bash
-   make up
+   npm run dev
    ```
 
 2. **Run Angular dev server** (in a new terminal):
@@ -400,42 +400,12 @@ frontend/
 
 3. **Access the application**:
    - Frontend: http://localhost:4200
-   - API Gateway: http://localhost:8000
-   - MailHog: http://localhost:8025
+   - Supabase API: http://localhost:54321
+   - Email UI (Inbucket): http://localhost:54324
 
-### Proxy Configuration (Optional)
+### Proxy Configuration
 
-To avoid CORS issues during development, create a proxy config:
-
-**`frontend/proxy.conf.json`**:
-```json
-{
-  "/api": {
-    "target": "http://localhost:8000",
-    "secure": false,
-    "changeOrigin": true,
-    "pathRewrite": {
-      "^/api": ""
-    }
-  }
-}
-```
-
-Update `angular.json`:
-```json
-{
-  "serve": {
-    "options": {
-      "proxyConfig": "proxy.conf.json"
-    }
-  }
-}
-```
-
-Run with proxy:
-```bash
-ng serve --proxy-config proxy.conf.json
-```
+Not needed! Supabase CLI handles CORS automatically for local development.
 
 ## Common Use Cases
 
@@ -582,20 +552,19 @@ export const environment = {
 
 ### CORS Issues
 
-If you encounter CORS errors, ensure:
-1. You're using the Kong Gateway URL (`http://localhost:8000`) not the direct service URLs
-2. Your `docker/.env` has the correct `SITE_URL` and `URI_ALLOW_LIST` settings
+Not applicable - Supabase CLI handles CORS automatically for local development.
 
 ### Auth Not Working
 
-1. Check MailHog at http://localhost:8025 for confirmation emails
-2. Verify `GOTRUE_MAILER_AUTOCONFIRM` in `docker/compose.yml` (set to `true` for development)
+1. Check Inbucket at http://localhost:54324 for confirmation emails
+2. Auth is auto-confirmed in local development by default
 3. Check browser console for auth errors
+4. Verify you're using the correct API URL: `http://localhost:54321`
 
 ### Real-time Not Connecting
 
-1. Ensure Realtime service is running: `docker ps | grep realtime`
-2. Check that your table has `REPLICA IDENTITY FULL` enabled
+1. Ensure Supabase is running: `npm run status`
+2. Check that your table has real-time enabled in `supabase/config.toml`
 3. Verify RLS policies allow the current user to subscribe
 
 ## Additional Resources

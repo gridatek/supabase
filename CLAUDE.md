@@ -4,119 +4,113 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-This project uses a Makefile for common operations:
+This project uses npm scripts with Supabase CLI (cross-platform compatible):
 
 ```bash
-# Start all services (Docker-based Supabase stack)
-make up
+# Start Supabase locally (starts all services)
+npm run dev
 
 # Stop all services
-make down
+npm run stop
 
-# Reset database (removes volumes) and run migrations
-make reset
+# Reset database and re-run migrations
+npm run reset
 
-# Run migrations only
-make migrate
+# Apply migrations locally
+npm run migrate
 
-# Seed database
-make seed
+# Apply migrations to production
+npm run migrate:prod
 
-# View logs (follows output)
-make logs
+# View service status
+npm run status
 
-# Open PostgreSQL shell
-make shell-db
+# View logs
+npm run logs
 
-# Run tests (requires npm/package.json)
-make test
+# Open database shell
+npm run shell
+
+# Generate TypeScript types
+npm run types
 ```
 
 ## Architecture Overview
 
-This is a Docker-based Supabase setup for local development with dual migration tooling support.
+This is a Supabase CLI-based setup for local development. The CLI manages all Docker containers automatically.
 
-### Core Services (docker/compose.yml)
-All services run via Docker Compose with health checks and automatic restarts:
+### Core Services
+All services are managed by Supabase CLI and run in Docker automatically:
 
-- **PostgreSQL Database** (port 5432): Supabase Postgres 15.8.1.060 with extensions
-- **PostgREST API** (port 3000): Auto-generated REST API v12.2.12 exposing public, storage, auth schemas
-- **Supabase Auth** (port 9999): GoTrue v2.177.0 for authentication with OAuth support
-- **Supabase Realtime** (port 4000): v2.34.47 for real-time subscriptions via RLS
-- **Supabase Storage** (port 5000): v1.25.7 for file storage (file backend, 50MB limit)
-- **Kong Gateway** (port 8000): v3.9.1 API gateway routing all services
-- **MailHog** (ports 1025/8025): SMTP testing server for development emails
-
-### Dual Tooling Approach
-
-This project supports both Docker Compose and Supabase CLI workflows:
-
-**Docker Compose (via Makefile):**
-- Uses `docker/compose.yml` for service orchestration
-- Direct container management with `make up/down`
-- Database shell via `docker exec` into supabase-db container
-
-**Supabase CLI (via scripts):**
-- `scripts/migrate.sh`: Runs `supabase db push` for local or production
-- `scripts/seed.sh`: Applies seed data via `supabase db push --file`
-- Checks for running Supabase instance and starts if needed
-- Supports ENVIRONMENT variable for production deployment
+- **PostgreSQL Database** (port 54322): Postgres with Supabase extensions
+- **PostgREST API** (port 54321): Auto-generated REST API
+- **Supabase Auth** (port 54321): Authentication service with OAuth support
+- **Supabase Realtime** (port 54321): Real-time subscriptions via RLS
+- **Supabase Storage** (port 54321): File storage service
+- **Kong Gateway** (port 54321): API gateway routing (main entry point)
+- **Inbucket** (port 54324): Email testing UI for development
 
 ### Database Management
 
 **Migration Files:** `supabase/migrations/` with 5-digit sequential numbering (00000, 00001, etc.)
 - Existing migrations: 00000_create_helper_functions.sql, 00001_create_users_table.sql, 00002_create_posts_table.sql, 00003_add_user_profiles.sql
-- Applied via `supabase db push --local` (CLI) or Supabase's built-in migration system
+- Applied via `npm run migrate` which runs `supabase db push --local`
+- Production: `npm run migrate:prod` runs `supabase db push`
 
 **Configuration:** `supabase/config.toml`
-- API port: 54321 (Supabase CLI default, differs from Docker port 3000)
-- DB port: 54322 (Supabase CLI default, differs from Docker port 5432)
-- Exposed schemas: public, storage
-- GitHub OAuth configured via environment variables
+- All Supabase CLI settings
+- Database version, ports, schemas
+- Auth providers and settings
+- Storage configuration
 
 ### Environment Configuration
 
-Required environment variables in `docker/.env`:
-- `POSTGRES_PASSWORD`, `POSTGRES_DB`: Database credentials
-- `JWT_SECRET`, `ANON_KEY`, `SERVICE_KEY`: Auth tokens (generate with `openssl rand -base64 32`)
-- `API_EXTERNAL_URL`, `SITE_URL`, `URI_ALLOW_LIST`: URL configuration
-- Email settings for MailHog (SMTP_HOST=mailhog, SMTP_PORT=1025)
+All configuration is in `supabase/config.toml`. No environment files needed for local development.
 
-Optional `.env.local` for scripts:
-- `ENVIRONMENT`: Set to "production" for production migrations
-- `PROJECT_ID`: Supabase project reference for production deployment
+For production deployment:
+- Set `SUPABASE_ACCESS_TOKEN` for authentication
+- Set `PROJECT_ID` for your Supabase project reference
+- Run `npm run link` to link to production project
 
 ### CI/CD Workflows
 
 **`.github/workflows/ci.yml`:**
-- Runs on push/PR to main/develop branches
-- Uses Supabase CLI to start local instance, apply migrations, and verify with `supabase db diff`
-- Includes separate migration-check job with dry-run testing
+- Tests migrations with Supabase CLI
+- Runs on all platforms (Linux, Mac, Windows)
 
-**Other workflows:** local-dev-test.yml, deploy.yml for environment-specific testing
+**`.github/workflows/docker-stack-test.yml`:**
+- Tests Docker stack compatibility
+- Cross-platform testing
+
+**`.github/workflows/angular-integration.yml`:**
+- Tests Angular frontend integration (if exists)
+- Creates test project if not present
+
+**`.github/workflows/deploy.yml`:**
+- Deploys migrations to production
+- Manual trigger only
 
 ## Development Workflow
 
 1. **Initial Setup:**
    ```bash
-   cp docker/.env.example docker/.env
-   # Edit docker/.env with real secrets
-   make up
-   # Wait for services to be healthy (~5 seconds)
+   npm install -g supabase
+   npm run dev
    ```
 
 2. **Creating Migrations:**
    - Create new file: `supabase/migrations/00004_description.sql`
    - Use sequential numbering (next number after highest existing)
-   - Apply with `make migrate` (runs `scripts/migrate.sh`)
+   - Apply with `npm run migrate`
 
 3. **Database Access:**
-   - Shell: `make shell-db` (connects as postgres user)
-   - Connection string: `postgresql://localhost:5432/supabase`
-   - Note: Supabase CLI uses different ports (54322) than Docker (5432)
+   - Shell: `npm run shell`
+   - Check status: `npm run status`
+   - View connection string in status output
 
 4. **Testing Migrations:**
-   - Locally: `make reset` (full reset) or `make migrate` (incremental)
+   - Locally: `npm run reset` (full reset) or `npm run migrate` (incremental)
+   - View diff: `npm run diff`
    - CI: Automatic validation on push/PR via GitHub Actions
 
 ## Migration Best Practices
@@ -124,18 +118,14 @@ Optional `.env.local` for scripts:
 - Use 5-digit sequential numbering (00000, 00001, 00002, etc.)
 - Helper functions go in 00000_create_helper_functions.sql for reusability
 - Enable Row Level Security (RLS) on all tables
-- Test locally before pushing (CI will validate but catch issues earlier)
-- Scripts support production deployment via ENVIRONMENT=production and PROJECT_ID variables
+- Test locally with `npm run diff` before applying
+- Use `npm run reset` to test migrations from scratch
 
 ## Service Access
 
-When services are running (`make up`):
-- **API Gateway:** http://localhost:8000 (main entry point)
-- **Direct PostgREST:** http://localhost:3000
-- **Auth:** http://localhost:9999
-- **Realtime:** http://localhost:4000
-- **Storage:** http://localhost:5000
-- **Database:** postgresql://postgres:password@localhost:5432/supabase
-- **MailHog UI:** http://localhost:8025
+When services are running (`npm run dev`):
+- **API Gateway:** http://localhost:54321 (main entry point via Kong)
+- **Database:** Check `npm run status` for connection string
+- **Email UI (Inbucket):** http://localhost:54324
 
-Note: Supabase CLI uses different port scheme (54321, 54322, 54323) when using `supabase start`
+All services are accessible through port 54321 (Kong gateway)

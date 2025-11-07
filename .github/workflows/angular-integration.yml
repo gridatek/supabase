@@ -84,7 +84,7 @@ jobs:
             users: any[] = []
 
             async ngOnInit() {
-              const { data } = await supabase.from('users').select('*')
+              const { data } = await supabase.from('profiles').select('*')
               if (data) this.users = data
             }
           }
@@ -126,7 +126,7 @@ jobs:
 
           # Test Supabase API
           API_URL=$(npm run status | grep "API URL" | awk '{print $3}')
-          curl -f "$API_URL/rest/v1/users?select=count" || exit 1
+          curl -f "$API_URL/rest/v1/profiles?select=count" || exit 1
 
           kill $ANGULAR_PID
           echo "✅ Angular app is working and connected to Supabase"

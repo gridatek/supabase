@@ -53,9 +53,9 @@ jobs:
           echo "Testing API endpoint..."
           curl -f "$API_URL/rest/v1/" || exit 1
 
-          # Test database has tables (check if users table exists from seed)
+          # Test database has tables (check if profiles table exists)
           echo "Testing database tables..."
-          curl -f "$API_URL/rest/v1/users?select=count" || exit 1
+          curl -f "$API_URL/rest/v1/profiles?select=count" || exit 1
 
           echo "✅ All services responding and database accessible"
 

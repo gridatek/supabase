@@ -47,7 +47,7 @@ export class App implements OnInit {
   users: any[] = []
 
   async ngOnInit() {
-    const { data } = await supabase.from('users').select('*')
+    const { data } = await supabase.from('profiles').select('*')
     if (data) this.users = data
   }
 }
@@ -115,7 +115,7 @@ Test your setup by querying the users table:
 ```typescript
 // Example: Fetch users from seed data
 const { data, error } = await supabase
-  .from('users')
+  .from('profiles')
   .select('*')
 
 console.log(data) // Should show Alice, Bob, Carol
@@ -153,7 +153,7 @@ export class App implements OnInit {
   users: any[] = []
 
   async ngOnInit() {
-    const { data } = await supabase.from('users').select('*')
+    const { data } = await supabase.from('profiles').select('*')
     if (data) this.users = data
   }
 }

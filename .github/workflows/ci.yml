@@ -16,29 +16,23 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v1
         with:
           version: latest
 
-      - name: Start Supabase
+      - run: npm run dev
         shell: bash
-        run: npm run dev
 
-      - name: Run migrations
+      - run: npm run migrate
         shell: bash
-        run: npm run migrate
 
-      - name: Verify migrations
+      - run: npm run diff
         shell: bash
-        run: npm run diff
 
-      - name: Cleanup
+      - run: npm run stop
         if: always()
         shell: bash
-        run: npm run stop

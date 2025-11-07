@@ -15,26 +15,18 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - uses: supabase/setup-cli@v1
         with:
           version: latest
 
-      - name: Link Supabase project
-        run: supabase link --project-ref $PROJECT_ID
+      - run: supabase link --project-ref $PROJECT_ID
 
-      - name: Run migrations
-        run: |
-          echo "🚀 Applying migrations to production..."
-          supabase db push
+      - run: npm run migrate:prod
 
-      - name: Verify deployment
-        run: |
-          echo "✅ Checking production health..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://$PROJECT_ID.supabase.co/rest/v1/)
-          if [ $response -eq 200 ]; then
-            echo "✅ Production is healthy"
-          else
-            echo "❌ Health check failed with status: $response"
-            exit 1
-          fi
+      - run: |
+          curl -f https://$PROJECT_ID.supabase.co/rest/v1/ || exit 1
+        shell: bash

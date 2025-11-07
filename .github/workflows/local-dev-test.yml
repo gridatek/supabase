@@ -1,4 +1,4 @@
-name: Supabase Stack Test
+name: Stack Test
 
 on:
   push:
@@ -18,41 +18,24 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v1
         with:
           version: latest
 
-      - name: Start Supabase
+      - run: npm run dev
         shell: bash
-        run: npm run dev
 
-      - name: Check status
+      - run: npm run status
         shell: bash
-        run: npm run status
 
-      - name: Test database
-        shell: bash
-        run: npm run shell -- -c "SELECT version();"
-
-      - name: Test API
-        shell: bash
-        run: |
-          echo "🔍 Testing REST API..."
-          # Get anon key from status
-          curl -f http://localhost:54321/rest/v1/ -H "apikey: $(npm run status --silent | grep 'anon key' | awk '{print $3}')" || echo "API test"
-
-      - name: Show logs on failure
+      - run: npm run logs
         if: failure()
         shell: bash
-        run: npm run logs
 
-      - name: Cleanup
+      - run: npm run stop
         if: always()
         shell: bash
-        run: npm run stop

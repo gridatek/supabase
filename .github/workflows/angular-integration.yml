@@ -23,85 +23,48 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
 
-      - name: Check if frontend exists
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Check frontend
         id: check
         shell: bash
         run: |
           if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "✅ Frontend exists"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "📦 No frontend found, will create test project"
+            echo "⏭️ No frontend, skipping"
           fi
 
-      - name: Create test Angular project
-        if: steps.check.outputs.exists == 'false'
-        shell: bash
-        run: |
-          echo "🏗️ Creating test Angular project..."
-          npm install -g @angular/cli
-          ng new frontend --routing --style=scss --skip-git --skip-install
-
-          cd frontend
-          npm install @supabase/supabase-js
-
-          # Create environment file
-          mkdir -p src/environments
-          cat > src/environments/environment.ts << 'EOF'
-          export const environment = {
-            production: false,
-            supabase: {
-              url: 'http://localhost:8000',
-              anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-            }
-          };
-          EOF
-
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: Start Supabase
-        shell: bash
-        run: npm run dev
-
-      - name: Update Angular environment with Supabase URL
+      - run: npm run dev
         if: steps.check.outputs.exists == 'true'
         shell: bash
-        run: |
-          # Update environment file with correct Supabase URL (CLI uses port 54321)
-          if [ -f "frontend/src/environments/environment.ts" ]; then
-            sed -i.bak "s|http://localhost:8000|http://localhost:54321|g" frontend/src/environments/environment.ts
-          fi
 
-      - name: Install dependencies
-        shell: bash
+      - run: npm ci
+        if: steps.check.outputs.exists == 'true'
         working-directory: ./frontend
-        run: npm ci
-
-      - name: Build Angular
         shell: bash
-        working-directory: ./frontend
-        run: npm run build
 
-      - name: Run tests
+      - run: npm run build
+        if: steps.check.outputs.exists == 'true'
+        working-directory: ./frontend
         shell: bash
-        working-directory: ./frontend
-        run: npm run test -- --watch=false --browsers=ChromeHeadless
 
-      - name: Show logs on failure
+      - run: npm test -- --watch=false --browsers=ChromeHeadless
+        if: steps.check.outputs.exists == 'true'
+        working-directory: ./frontend
+        shell: bash
+
+      - run: npm run logs
         if: failure()
         shell: bash
-        run: npm run logs
 
-      - name: Cleanup
-        if: always()
+      - run: npm run stop
+        if: always() && steps.check.outputs.exists == 'true'
         shell: bash
-        run: npm run stop

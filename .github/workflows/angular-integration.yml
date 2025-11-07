@@ -19,8 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        # Note: Windows excluded - Supabase requires Docker which isn't well supported on Windows runners
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v5
@@ -29,14 +28,8 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Docker (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install docker colima
-          colima start
-
-      - name: Verify Docker
-        run: docker ps
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v3
 
       - uses: supabase/setup-cli@v1
         with:

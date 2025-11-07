@@ -8,7 +8,7 @@ project/
 │   └── workflows/        # CI/CD workflows
 ├── supabase/
 │   ├── migrations/       # Database migrations
-│   ├── seed.sql          # Seed data (optional)
+│   ├── seed.sql          # Seed data
 │   └── config.toml       # Supabase configuration
 ├── docs/                 # Documentation (ordered guides)
 ├── package.json          # npm scripts

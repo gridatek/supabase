@@ -28,6 +28,15 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install Docker (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install docker colima
+          colima start
+
+      - name: Verify Docker
+        run: docker ps
+
       - uses: supabase/setup-cli@v1
         with:
           version: latest

@@ -9,44 +9,80 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v5
 
       - name: Create environment file
+        shell: bash
         run: |
-          cp docker/.env.example docker/.env
-          sed -i 's/your-super-secret-password/postgres/g' docker/.env
-          sed -i 's/your-jwt-secret-here/your-super-secret-jwt-token-with-at-least-32-characters-long/g' docker/.env
-          sed -i 's/your-anon-key-here/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0/g' docker/.env
-          sed -i 's/your-service-key-here/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU/g' docker/.env
+          cat > docker/.env << 'EOF'
+          POSTGRES_PASSWORD=postgres
+          POSTGRES_DB=supabase
+          JWT_SECRET=your-super-secret-jwt-token-with-at-least-32-characters-long
+          ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+          SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+          PROJECT_REF=local
+          API_EXTERNAL_URL=http://localhost:8000
+          SITE_URL=http://localhost:3000
+          URI_ALLOW_LIST=http://localhost:3000
+          ENABLE_EMAIL=true
+          MAILER_AUTOCONFIRM=true
+          SMTP_HOST=mailhog
+          SMTP_PORT=1025
+          SMTP_ADMIN_EMAIL=admin@example.com
+          DISABLE_SIGNUP=false
+          EOF
 
       - name: Start services
+        shell: bash
         run: make up
 
       - name: Wait for services
+        shell: bash
         run: |
           echo "⏳ Waiting for PostgreSQL..."
-          timeout 60 bash -c 'until docker exec supabase-db pg_isready -U postgres -h localhost; do sleep 2; done'
-          echo "✅ Services ready"
+
+          # Cross-platform wait for PostgreSQL
+          for i in {1..30}; do
+            if docker exec supabase-db pg_isready -U postgres -h localhost > /dev/null 2>&1; then
+              echo "✅ PostgreSQL ready"
+              break
+            fi
+            sleep 2
+          done
 
       - name: Test database
+        shell: bash
         run: |
           echo "🗄️ Testing database..."
           docker exec supabase-db psql -U postgres -d supabase -c "SELECT version();"
 
       - name: Test API
+        shell: bash
         run: |
           echo "🔍 Testing REST API..."
-          timeout 60 bash -c 'until curl -f http://localhost:8000/rest/v1/ -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" > /dev/null 2>&1; do sleep 2; done'
-          echo "✅ API responding"
+
+          # Cross-platform wait for API
+          for i in {1..30}; do
+            if curl -f http://localhost:8000/rest/v1/ -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" > /dev/null 2>&1; then
+              echo "✅ API responding"
+              break
+            fi
+            sleep 2
+          done
 
       - name: Show logs on failure
         if: failure()
+        shell: bash
         run: docker compose -f docker/compose.yml logs --tail 50
 
       - name: Cleanup
         if: always()
+        shell: bash
         run: make down

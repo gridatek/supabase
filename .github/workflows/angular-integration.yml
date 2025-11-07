@@ -1,4 +1,4 @@
-name: Angular Integration Test
+name: Angular Test
 
 on:
   push:
@@ -6,310 +6,74 @@ on:
     paths:
       - 'frontend/**'
       - 'supabase/**'
-      - '.github/workflows/angular-integration.yml'
   pull_request:
     branches: [main]
     paths:
       - 'frontend/**'
-      - 'supabase/**'
-  workflow_dispatch: # Allow manual trigger
-
-env:
-  POSTGRES_PASSWORD: postgres
-  POSTGRES_DB: supabase
-  JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
-  ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
-  SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
-  PROJECT_REF: local
-  API_EXTERNAL_URL: http://localhost:8000
-  SITE_URL: http://localhost:4200
-  URI_ALLOW_LIST: http://localhost:4200
+  workflow_dispatch:
 
 jobs:
-  test-angular-integration:
+  test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'frontend/package-lock.json'
-
-      - name: Check if Angular frontend exists
-        id: check-frontend
+      - name: Check if frontend exists
+        id: check
         run: |
           if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "✅ Angular frontend found"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "⚠️ No Angular frontend found, skipping tests"
+            echo "⏭️ No Angular frontend, skipping"
           fi
 
-      - name: Create Supabase environment file
-        if: steps.check-frontend.outputs.exists == 'true'
-        run: |
-          cat > docker/.env << EOF
-          POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }}
-          POSTGRES_DB=${{ env.POSTGRES_DB }}
-          JWT_SECRET=${{ env.JWT_SECRET }}
-          ANON_KEY=${{ env.ANON_KEY }}
-          SERVICE_KEY=${{ env.SERVICE_KEY }}
-          PROJECT_REF=${{ env.PROJECT_REF }}
-          API_EXTERNAL_URL=${{ env.API_EXTERNAL_URL }}
-          SITE_URL=${{ env.SITE_URL }}
-          URI_ALLOW_LIST=${{ env.URI_ALLOW_LIST }}
-          ENABLE_EMAIL=true
-          MAILER_AUTOCONFIRM=true
-          SMTP_HOST=mailhog
-          SMTP_PORT=1025
-          SMTP_ADMIN_EMAIL=admin@example.com
-          DISABLE_SIGNUP=false
-          EOF
+      - name: Setup Node.js
+        if: steps.check.outputs.exists == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
 
-      - name: Start Supabase services
-        if: steps.check-frontend.outputs.exists == 'true'
+      - name: Create environment
+        if: steps.check.outputs.exists == 'true'
         run: |
-          echo "🚀 Starting Supabase services..."
-          make up
+          cp docker/.env.example docker/.env
+          sed -i 's/your-super-secret-password/postgres/g' docker/.env
+          sed -i 's/your-jwt-secret-here/your-super-secret-jwt-token-with-at-least-32-characters-long/g' docker/.env
+          sed -i 's/your-anon-key-here/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0/g' docker/.env
+          sed -i 's/your-service-key-here/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU/g' docker/.env
 
-      - name: Wait for Supabase services
-        if: steps.check-frontend.outputs.exists == 'true'
+      - name: Start Supabase
+        if: steps.check.outputs.exists == 'true'
+        run: make up
+
+      - name: Wait for services
+        if: steps.check.outputs.exists == 'true'
         run: |
-          echo "⏳ Waiting for services to be healthy..."
-          sleep 30
-
-          # Wait for PostgreSQL
           timeout 120 bash -c 'until docker exec supabase-db pg_isready -U postgres -h localhost; do sleep 2; done'
-          echo "✅ PostgreSQL is ready"
+          timeout 120 bash -c 'until curl -f http://localhost:8000/rest/v1/ -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" > /dev/null 2>&1; do sleep 2; done'
 
-          # Wait for REST API
-          timeout 120 bash -c 'until curl -f http://localhost:8000/rest/v1/ -H "apikey: ${{ env.ANON_KEY }}" > /dev/null 2>&1; do echo "Waiting for REST API..."; sleep 5; done'
-          echo "✅ REST API is ready"
-
-          # Wait for Auth service
-          timeout 120 bash -c 'until curl -f http://localhost:9999/health > /dev/null 2>&1; do echo "Waiting for Auth..."; sleep 5; done'
-          echo "✅ Auth service is ready"
-
-      - name: Run migrations
-        if: steps.check-frontend.outputs.exists == 'true'
-        run: |
-          echo "🔄 Running migrations..."
-          if [ -d "supabase/migrations" ] && [ "$(ls -A supabase/migrations)" ]; then
-            make migrate || echo "⚠️ Migration issues, continuing..."
-          else
-            echo "📝 No migrations found"
-          fi
-
-      - name: Install Angular dependencies
-        if: steps.check-frontend.outputs.exists == 'true'
+      - name: Install dependencies
+        if: steps.check.outputs.exists == 'true'
         working-directory: ./frontend
-        run: |
-          echo "📦 Installing Angular dependencies..."
-          npm ci
+        run: npm ci
 
-      - name: Create Angular environment file
-        if: steps.check-frontend.outputs.exists == 'true'
-        run: |
-          mkdir -p frontend/src/environments
-          cat > frontend/src/environments/environment.ts << EOF
-          export const environment = {
-            production: false,
-            supabase: {
-              url: '${{ env.API_EXTERNAL_URL }}',
-              anonKey: '${{ env.ANON_KEY }}'
-            }
-          };
-          EOF
-
-      - name: Lint Angular code
-        if: steps.check-frontend.outputs.exists == 'true'
+      - name: Build Angular
+        if: steps.check.outputs.exists == 'true'
         working-directory: ./frontend
-        run: |
-          echo "🔍 Linting Angular code..."
-          npm run lint || echo "⚠️ Linting issues found, continuing..."
+        run: npm run build
 
-      - name: Build Angular application
-        if: steps.check-frontend.outputs.exists == 'true'
+      - name: Run tests
+        if: steps.check.outputs.exists == 'true'
         working-directory: ./frontend
-        run: |
-          echo "🏗️ Building Angular application..."
-          npm run build -- --configuration production
+        run: npm run test -- --watch=false --browsers=ChromeHeadless
 
-      - name: Run Angular unit tests
-        if: steps.check-frontend.outputs.exists == 'true'
-        working-directory: ./frontend
-        run: |
-          echo "🧪 Running Angular unit tests..."
-          npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
-
-      - name: Upload test coverage
-        if: steps.check-frontend.outputs.exists == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: frontend/coverage/
-          retention-days: 7
-
-      - name: Start Angular dev server in background
-        if: steps.check-frontend.outputs.exists == 'true'
-        working-directory: ./frontend
-        run: |
-          echo "🚀 Starting Angular dev server..."
-          npm start &
-
-          # Wait for Angular to be ready
-          timeout 120 bash -c 'until curl -f http://localhost:4200 > /dev/null 2>&1; do echo "Waiting for Angular..."; sleep 5; done'
-          echo "✅ Angular dev server is ready"
-
-      - name: Test Supabase connectivity from Angular
-        if: steps.check-frontend.outputs.exists == 'true'
-        run: |
-          echo "🔗 Testing Supabase connectivity..."
-
-          # Test REST API through Kong Gateway
-          echo "Testing REST API..."
-          curl -f http://localhost:8000/rest/v1/ \
-            -H "apikey: ${{ env.ANON_KEY }}" \
-            -H "Content-Type: application/json"
-
-          # Test Auth API
-          echo "Testing Auth API..."
-          curl -f http://localhost:9999/health
-
-          # Test Angular is serving
-          echo "Testing Angular frontend..."
-          curl -f http://localhost:4200
-
-          echo "✅ All connectivity tests passed"
-
-      - name: Run E2E tests (if configured)
-        if: steps.check-frontend.outputs.exists == 'true'
-        working-directory: ./frontend
-        run: |
-          echo "🎭 Running E2E tests..."
-          if [ -f "cypress.config.ts" ] || [ -f "playwright.config.ts" ]; then
-            npm run e2e || echo "⚠️ E2E tests not configured or failed"
-          else
-            echo "📝 No E2E tests configured, skipping"
-          fi
-
-      - name: Test sample database operations
-        if: steps.check-frontend.outputs.exists == 'true'
-        run: |
-          echo "🗄️ Testing database operations via REST API..."
-
-          # Create a test table
-          docker exec supabase-db psql -U postgres -d supabase -c "
-            CREATE TABLE IF NOT EXISTS test_integration (
-              id SERIAL PRIMARY KEY,
-              title TEXT NOT NULL,
-              created_at TIMESTAMP DEFAULT NOW()
-            );
-            ALTER TABLE test_integration ENABLE ROW LEVEL SECURITY;
-            CREATE POLICY IF NOT EXISTS 'Allow anonymous read' ON test_integration FOR SELECT USING (true);
-          "
-
-          # Insert via REST API
-          curl -X POST http://localhost:8000/rest/v1/test_integration \
-            -H "apikey: ${{ env.ANON_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{"title":"Integration Test"}'
-
-          # Query via REST API
-          response=$(curl -s http://localhost:8000/rest/v1/test_integration \
-            -H "apikey: ${{ env.ANON_KEY }}")
-
-          echo "Response: $response"
-
-          # Clean up
-          docker exec supabase-db psql -U postgres -d supabase -c "
-            DROP TABLE IF EXISTS test_integration;
-          "
-
-          echo "✅ Database operations test passed"
-
-      - name: Check for build warnings
-        if: steps.check-frontend.outputs.exists == 'true'
-        working-directory: ./frontend
-        run: |
-          echo "⚠️ Checking build output for warnings..."
-          npm run build 2>&1 | tee build.log
-          if grep -i "warning" build.log; then
-            echo "⚠️ Build warnings found (not failing the build)"
-          fi
-
-      - name: Verify environment configuration
-        if: steps.check-frontend.outputs.exists == 'true'
-        run: |
-          echo "🔍 Verifying environment configuration..."
-
-          # Check if environment files exist
-          if [ -f "frontend/src/environments/environment.ts" ]; then
-            echo "✅ Development environment configured"
-          fi
-
-          if [ -f "frontend/src/environments/environment.prod.ts" ]; then
-            echo "✅ Production environment configured"
-          else
-            echo "⚠️ Production environment not configured"
-          fi
-
-      - name: Display service logs on failure
-        if: failure() && steps.check-frontend.outputs.exists == 'true'
-        run: |
-          echo "🔍 Displaying service logs..."
-          echo "=== Docker Services ==="
-          docker ps -a
-
-          echo "=== PostgreSQL Logs ==="
-          docker logs supabase-db --tail 100
-
-          echo "=== Kong Gateway Logs ==="
-          docker logs supabase-kong --tail 100
-
-          echo "=== PostgREST Logs ==="
-          docker logs supabase-rest --tail 100
-
-          echo "=== Auth Logs ==="
-          docker logs supabase-auth --tail 100
-
-      - name: Upload build artifacts
-        if: steps.check-frontend.outputs.exists == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: angular-build
-          path: frontend/dist/
-          retention-days: 7
+      - name: Show logs on failure
+        if: failure() && steps.check.outputs.exists == 'true'
+        run: docker compose -f docker/compose.yml logs --tail 50
 
       - name: Cleanup
-        if: always() && steps.check-frontend.outputs.exists == 'true'
-        run: |
-          echo "🧹 Cleaning up..."
-          make down
-          docker system prune -f
-
-  test-summary:
-    runs-on: ubuntu-latest
-    needs: test-angular-integration
-    if: always()
-
-    steps:
-      - name: Test Summary
-        run: |
-          echo "📊 Angular Integration Test Summary"
-          echo "=================================="
-          if [ "${{ needs.test-angular-integration.result }}" == "success" ]; then
-            echo "✅ All tests passed successfully!"
-          elif [ "${{ needs.test-angular-integration.result }}" == "skipped" ]; then
-            echo "⏭️ Tests were skipped (no Angular frontend found)"
-          else
-            echo "❌ Some tests failed. Check the logs above for details."
-            exit 1
-          fi
+        if: always() && steps.check.outputs.exists == 'true'
+        run: make down

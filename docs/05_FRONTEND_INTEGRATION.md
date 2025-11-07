@@ -22,7 +22,7 @@ npm install @supabase/supabase-js
 
 ### Configure Supabase Connection
 
-Update `frontend/src/app/app.component.ts`:
+Update `frontend/src/app/app.ts`:
 
 ```typescript
 import { Component, OnInit } from '@angular/core'
@@ -53,7 +53,7 @@ export class App implements OnInit {
 }
 ```
 
-> **Note**: Angular 18+ uses standalone components by default (no NgModules) and the new `@for` control flow syntax. The API key shown is the default Supabase CLI key for local development only.
+> **Note**: Angular 20+ removed component suffixes (now `app.ts` instead of `app.component.ts`), uses standalone by default, and the new `@for` control flow. The API key shown is the default Supabase CLI key for local development only.
 
 ## Monorepo Structure
 
@@ -64,7 +64,7 @@ project/
 ├── frontend/                 # Angular app
 │   ├── src/
 │   │   └── app/
-│   │       └── app.component.ts  # Includes Supabase client
+│   │       └── app.ts  # Root component with Supabase client
 │   ├── angular.json
 │   └── package.json
 ├── supabase/                # Supabase backend
@@ -127,7 +127,7 @@ console.log(data) // Should show Alice, Bob, Carol
 
 For production, update your component to use environment variables.
 
-Update `frontend/src/app/app.component.ts`:
+Update `frontend/src/app/app.ts`:
 
 ```typescript
 import { Component, OnInit } from '@angular/core'

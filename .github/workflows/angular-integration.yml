@@ -48,7 +48,7 @@ jobs:
           echo "npm version: $(npm --version)"
           echo "Supabase CLI version: $(supabase --version)"
           echo "Docker version: $(docker --version)"
-          echo "Angular CLI version: $(ng version --no-update-notifier 2>/dev/null | head -n 1 || ng version | head -n 1)"
+          echo "Angular CLI version: $(ng version)"
 
       - name: Check frontend exists
         id: check

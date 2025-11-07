@@ -16,8 +16,8 @@ This guide walks you through integrating an Angular frontend with your Supabase 
 # Install Angular CLI globally
 npm install -g @angular/cli
 
-# Create new Angular app in the frontend directory
-ng new frontend --routing --style=scss
+# Create new Angular app in the frontend directory (skip git init since we're already in a repo)
+ng new frontend --routing --style=scss --skip-git
 
 # Navigate to the frontend directory
 cd frontend

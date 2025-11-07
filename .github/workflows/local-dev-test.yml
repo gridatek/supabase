@@ -2,7 +2,7 @@ name: Local Dev Environment Test
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch: # Allow manual trigger

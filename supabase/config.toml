@@ -6,8 +6,12 @@ project_id = "supabase-template"
 port = 54322
 # The database major version to use
 major_version = 15
-# Seed file to run on reset
-seed_sql = "seed.sql"
+
+[db.seed]
+# Enable seeding on reset
+enabled = true
+# Seed files to run
+sql_paths = ["./seed.sql"]
 
 [api]
 # Port to use for the API URL

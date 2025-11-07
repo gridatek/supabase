@@ -31,10 +31,17 @@ jobs:
       - run: npm run dev
         shell: bash
 
+      - run: npm run status
+        shell: bash
+
       - run: npm run migrate
         shell: bash
 
       - run: npm run diff
+        shell: bash
+
+      - run: npm run logs
+        if: failure()
         shell: bash
 
       - run: npm run stop

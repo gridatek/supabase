@@ -112,6 +112,39 @@ async function testListUsers(token: string): Promise<boolean> {
   }
 }
 
+async function testUpdateUser(token: string, userId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-update-user`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        full_name: 'Updated Test User',
+        username: 'updateduser',
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Update user failed')
+    }
+
+    if (!data.success) {
+      throw new Error('Response does not indicate success')
+    }
+
+    logTest('Update User', true)
+    return true
+  } catch (error) {
+    logTest('Update User', false, error.message)
+    return false
+  }
+}
+
 async function testDeleteUser(token: string, userId: string): Promise<boolean> {
   try {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-delete-user`, {

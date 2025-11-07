@@ -265,10 +265,15 @@ async function main() {
   const testEmail = `test${Date.now()}@example.com`
   const userId = await testCreateUser(adminToken, testEmail)
 
-  // Test 5: List users
+  // Test 5: Update user
+  if (userId) {
+    await testUpdateUser(adminToken, userId)
+  }
+
+  // Test 6: List users
   await testListUsers(adminToken)
 
-  // Test 6: Delete user
+  // Test 7: Delete user
   if (userId) {
     await testDeleteUser(adminToken, userId)
   }

@@ -131,7 +131,7 @@ npm run reset
 - **[02. Migrations](./02_MIGRATIONS.md)** - Learn about database migrations
 - **[03. CI/CD](./03_CI_CD.md)** - Set up automated testing
 - **[04. Deployment](./04_DEPLOYMENT.md)** - Deploy to production
-- **[05. Angular Integration](./05_ANGULAR_INTEGRATION.md)** - Add Angular frontend
+- **[05. Frontend Integration](./05_FRONTEND_INTEGRATION.md)** - Add your frontend framework
 
 ## Troubleshooting
 

@@ -1,205 +1,26 @@
 # Frontend Integration Guide
 
-This guide shows how to add a frontend to your Supabase template as a monorepo setup. Choose your preferred framework!
+This guide shows how to add Angular to your Supabase template as a monorepo setup.
 
-## General Setup Pattern
+## Angular Setup
 
-All frontend frameworks follow a similar pattern:
-
-1. Create frontend app in a `frontend/` directory
-2. Install `@supabase/supabase-js` client
-3. Configure connection to local Supabase (http://localhost:54321)
-4. Update `.gitignore` for frontend-specific files
-5. Set up monorepo structure
-
-## Framework Guides
-
-### Angular
-
-#### Quick Setup
+### Quick Setup
 
 ```bash
 # Install Angular CLI
 npm install -g @angular/cli
 
 # Create Angular app (skip git since we're in a monorepo)
-ng new frontend --routing --style=scss --skip-git
+ng new frontend --skip-git --defaults
 
 # Install Supabase client
 cd frontend
 npm install @supabase/supabase-js
 ```
 
-#### Configure Supabase Connection
+### Configure Supabase Connection
 
-Create `frontend/src/app/supabase.service.ts`:
-
-```typescript
-import { Injectable } from '@angular/core';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-
-@Injectable({
-  providedIn: 'root'
-})
-export class SupabaseService {
-  private supabase: SupabaseClient;
-
-  constructor() {
-    this.supabase = createClient(
-      'http://localhost:54321',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-    );
-  }
-
-  get client() {
-    return this.supabase;
-  }
-}
-```
-
-### React
-
-#### Quick Setup
-
-```bash
-# Create React app with Vite
-npm create vite@latest frontend -- --template react-ts
-
-# Install Supabase client
-cd frontend
-npm install
-npm install @supabase/supabase-js
-```
-
-#### Configure Supabase Connection
-
-Create `frontend/src/lib/supabase.ts`:
-
-```typescript
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = 'http://localhost:54321'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-```
-
-Use in components:
-
-```typescript
-import { supabase } from './lib/supabase'
-
-function App() {
-  const [users, setUsers] = useState([])
-
-  useEffect(() => {
-    async function fetchUsers() {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-
-      if (data) setUsers(data)
-    }
-    fetchUsers()
-  }, [])
-
-  return <div>{/* Your UI */}</div>
-}
-```
-
-### Vue
-
-#### Quick Setup
-
-```bash
-# Create Vue app
-npm create vue@latest frontend
-
-# Install Supabase client
-cd frontend
-npm install
-npm install @supabase/supabase-js
-```
-
-#### Configure Supabase Connection
-
-Create `frontend/src/lib/supabase.ts`:
-
-```typescript
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = 'http://localhost:54321'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-```
-
-Use in components:
-
-```vue
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { supabase } from './lib/supabase'
-
-const users = ref([])
-
-onMounted(async () => {
-  const { data } = await supabase.from('users').select('*')
-  if (data) users.value = data
-})
-</script>
-```
-
-### Next.js
-
-#### Quick Setup
-
-```bash
-# Create Next.js app
-npx create-next-app@latest frontend
-
-# Install Supabase client
-cd frontend
-npm install @supabase/supabase-js
-```
-
-#### Configure Supabase Connection
-
-Create `frontend/lib/supabase.ts`:
-
-```typescript
-import { createClient } from '@supabase/supabase-js'
-
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-)
-```
-
-Create `frontend/.env.local`:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
-```
-
-### Svelte
-
-#### Quick Setup
-
-```bash
-# Create Svelte app with Vite
-npm create vite@latest frontend -- --template svelte-ts
-
-# Install Supabase client
-cd frontend
-npm install
-npm install @supabase/supabase-js
-```
-
-#### Configure Supabase Connection
-
-Create `frontend/src/lib/supabase.ts`:
+Create `frontend/src/app/supabase.ts`:
 
 ```typescript
 import { createClient } from '@supabase/supabase-js'
@@ -210,33 +31,40 @@ export const supabase = createClient(
 )
 ```
 
-## Monorepo Configuration
+> **Note**: The API key shown is the default Supabase CLI key for local development only.
 
-### Update Root .gitignore
+### Use in Components
 
-Add framework-specific entries:
+```typescript
+import { Component, OnInit } from '@angular/core'
+import { supabase } from './supabase'
 
-```gitignore
-# Frontend (adjust based on your framework)
-frontend/node_modules/
-frontend/dist/
-frontend/build/
-frontend/.next/
-frontend/.angular/
-frontend/.svelte-kit/
-frontend/.vscode/
+@Component({
+  selector: 'app-my-component',
+  template: `<div *ngFor="let user of users">{{ user.email }}</div>`
+})
+export class MyComponent implements OnInit {
+  users: any[] = []
+
+  async ngOnInit() {
+    const { data } = await supabase.from('users').select('*')
+    if (data) this.users = data
+  }
+}
 ```
 
-### Monorepo Structure
+## Monorepo Structure
 
 Your project should now look like this:
 
 ```
 project/
-├── frontend/                 # Your chosen frontend framework
+├── frontend/                 # Angular app
 │   ├── src/
-│   ├── package.json
-│   └── ...
+│   │   └── app/
+│   │       └── supabase.ts  # Supabase client
+│   ├── angular.json
+│   └── package.json
 ├── supabase/                # Supabase backend
 │   ├── migrations/
 │   └── config.toml
@@ -244,6 +72,17 @@ project/
 ├── docs/                    # Documentation
 ├── package.json            # Root scripts
 └── README.md
+```
+
+## Update .gitignore
+
+Add Angular-specific entries to your root `.gitignore`:
+
+```gitignore
+# Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
 ```
 
 ## Development Workflow
@@ -254,16 +93,16 @@ project/
 npm run dev
 ```
 
-### Terminal 2: Start Frontend
+### Terminal 2: Start Angular
 
 ```bash
 cd frontend
-npm run dev  # or npm start, depending on framework
+npm start
 ```
 
 ### Access Points
 
-- **Frontend**: Varies by framework (usually http://localhost:3000 or :4200 or :5173)
+- **Angular**: http://localhost:4200
 - **Supabase API**: http://localhost:54321
 - **Email UI**: http://localhost:54324
 
@@ -284,36 +123,38 @@ console.log(data) // Should show Alice, Bob, Carol
 
 ### Environment Variables
 
-For production, use environment variables:
+For production, use environment variables.
+
+Create `frontend/src/environments/environment.ts`:
 
 ```typescript
-// ✅ Good - uses environment variables
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,  // or NEXT_PUBLIC_SUPABASE_URL, etc.
-  process.env.VITE_SUPABASE_ANON_KEY
-)
-
-// ❌ Bad - hardcoded production credentials
-const supabase = createClient(
-  'https://xxxxx.supabase.co',
-  'eyJhbGc...'
-)
+export const environment = {
+  production: false,
+  supabaseUrl: 'http://localhost:54321',
+  supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+}
 ```
 
-### Local Development
+Create `frontend/src/environments/environment.prod.ts`:
 
-```env
-# .env.local (or .env.development)
-VITE_SUPABASE_URL=http://localhost:54321
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+```typescript
+export const environment = {
+  production: true,
+  supabaseUrl: 'https://your-project.supabase.co',
+  supabaseKey: 'your-production-anon-key'
+}
 ```
 
-### Production
+Update `frontend/src/app/supabase.ts`:
 
-```env
-# .env.production (not committed to git!)
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-production-anon-key
+```typescript
+import { createClient } from '@supabase/supabase-js'
+import { environment } from '../environments/environment'
+
+export const supabase = createClient(
+  environment.supabaseUrl,
+  environment.supabaseKey
+)
 ```
 
 Get production credentials from:
@@ -326,7 +167,7 @@ The monorepo keeps frontend and backend together:
 ```bash
 # Add frontend to your repo
 git add frontend/
-git commit -m "Add React frontend"
+git commit -m "Add Angular frontend"
 
 # Both frontend and backend are tracked together
 git push
@@ -336,24 +177,11 @@ git push
 
 The template includes an Angular integration workflow at `.github/workflows/angular-integration.yml`.
 
-To adapt for your framework:
-
-1. Open `.github/workflows/angular-integration.yml`
-2. Change the name and paths as needed
-3. Update the build and test commands
-
-Example for React:
-
-```yaml
-- run: npm ci
-  working-directory: ./frontend
-
-- run: npm run build
-  working-directory: ./frontend
-
-- run: npm test
-  working-directory: ./frontend
-```
+It automatically:
+- Starts Supabase backend
+- Installs frontend dependencies
+- Builds Angular application
+- Runs Angular unit tests
 
 ## Common Features
 
@@ -374,6 +202,9 @@ const { data, error } = await supabase.auth.signInWithPassword({
 
 // Sign out
 await supabase.auth.signOut()
+
+// Get current user
+const { data: { user } } = await supabase.auth.getUser()
 ```
 
 ### Real-time Subscriptions
@@ -412,37 +243,31 @@ Generate types from your database:
 npm run types
 ```
 
-Use in your frontend:
+Use in your Angular app:
 
 ```typescript
-import { Database } from '../types/database.types'
+import { Database } from '../../../types/database.types'
+
+type User = Database['public']['Tables']['users']['Row']
 
 // Type-safe queries
 const { data } = await supabase
   .from('users')
   .select('*')
-  .returns<Database['public']['Tables']['users']['Row'][]>()
 ```
 
-## Deployment Options
-
-### Frontend Hosting
-
-Popular options:
-- **Vercel** - Best for Next.js, also supports others
-- **Netlify** - Great for all frameworks
-- **Cloudflare Pages** - Fast global CDN
-- **AWS Amplify** - AWS ecosystem
-- **Firebase Hosting** - Google ecosystem
-
-### Build Commands
+## Production Build
 
 ```bash
 cd frontend
 npm run build
 ```
 
-Deploy the `dist/` or `build/` directory.
+Deploy the `frontend/dist/` directory to:
+- **Vercel** - Great for Angular
+- **Netlify** - Easy deployment
+- **Cloudflare Pages** - Fast global CDN
+- **Firebase Hosting** - Google ecosystem
 
 ## Troubleshooting
 
@@ -469,16 +294,9 @@ If queries return empty:
 
 ## Resources
 
-### Framework Documentation
-- [Angular](https://angular.io/docs)
-- [React](https://react.dev)
-- [Vue](https://vuejs.org/guide/)
-- [Next.js](https://nextjs.org/docs)
-- [Svelte](https://svelte.dev/docs)
-
-### Supabase Guides
+- [Angular Documentation](https://angular.io/docs)
 - [Supabase JS Client](https://supabase.com/docs/reference/javascript)
-- [Framework Quickstarts](https://supabase.com/docs/guides/getting-started/quickstarts)
+- [Supabase Angular Guide](https://supabase.com/docs/guides/getting-started/tutorials/with-angular)
 - [Authentication](https://supabase.com/docs/guides/auth)
 - [Database](https://supabase.com/docs/guides/database)
 - [Storage](https://supabase.com/docs/guides/storage)
@@ -486,4 +304,4 @@ If queries return empty:
 
 ---
 
-Choose your framework, follow the guide, and start building! 🚀
+That's it! You now have Angular integrated into your Supabase template. Start building! 🚀

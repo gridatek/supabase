@@ -40,6 +40,23 @@ jobs:
       - run: npm run diff
         shell: bash
 
+      # Optional: Test database and services health (remove if not needed)
+      - name: Test database connection and data
+        shell: bash
+        run: |
+          # Get the API URL
+          API_URL=$(supabase status | grep "API URL" | awk '{print $3}')
+
+          # Test API is responding
+          echo "Testing API endpoint..."
+          curl -f "$API_URL/rest/v1/" || exit 1
+
+          # Test database has tables (check if users table exists from seed)
+          echo "Testing database tables..."
+          curl -f "$API_URL/rest/v1/users?select=count" || exit 1
+
+          echo "✅ All services responding and database accessible"
+
       - run: npm run logs
         if: failure()
         shell: bash

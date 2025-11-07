@@ -33,7 +33,19 @@ npm run shell
 
 # Generate TypeScript types
 npm run types
+
+# Seed test data (users & posts)
+npm run seed
 ```
+
+## Test Data
+
+Run `npm run seed` to populate the database with:
+- **3 test users** (alice, bob, carol) - Password: `password123`
+- **6 sample posts** (mix of published and draft)
+- **Follow relationships** between users
+
+Perfect for development and testing!
 
 ## Architecture Overview
 

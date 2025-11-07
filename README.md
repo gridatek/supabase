@@ -18,14 +18,31 @@ project/
 
 ## Quick Start Guide
 
+### Prerequisites
+- [Docker Desktop](https://docs.docker.com/desktop/) installed and running
+- Node.js 18+ and npm
+
+### Start in 3 Commands
+
 ```bash
-# Clone and start in 3 commands
 git clone https://github.com/gridatek/supabase.git
 cd supabase
 npm run dev
 
 # That's it! Supabase is running
 ```
+
+### Seed Test Data
+
+```bash
+# Reset database and load seed data (test users & posts)
+npm run seed
+```
+
+**Test Users:**
+- `alice@example.com` / `password123`
+- `bob@example.com` / `password123`
+- `carol@example.com` / `password123`
 
 ## Development Commands
 
@@ -64,6 +81,9 @@ npm run types
 
 # Link to production project
 npm run link
+
+# Seed test data (users & posts)
+npm run seed
 ```
 
 ## Service Endpoints

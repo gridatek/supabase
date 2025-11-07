@@ -1,5 +1,13 @@
 # A string used to distinguish different Supabase projects on the same host
-project_id = "your-project-id"
+project_id = "supabase-template"
+
+[db]
+# Port to use for the local database URL
+port = 54322
+# The database major version to use
+major_version = 15
+# Seed file to run on reset
+seed_sql = "seed.sql"
 
 [api]
 # Port to use for the API URL
@@ -10,12 +18,6 @@ schemas = ["public", "storage"]
 extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure
 max_rows = 1000
-
-[db]
-# Port to use for the local database URL
-port = 54322
-# The database major version to use
-major_version = 15
 
 [studio]
 # Port to use for Supabase Studio
@@ -45,9 +47,9 @@ enable_signup = true
 # If enabled, a user will be required to confirm their email address before signing in
 enable_confirmations = false
 
-# Configure external OAuth providers
+# Configure external OAuth providers (optional)
 [auth.external.github]
-enabled = true
-client_id = "env(GITHUB_CLIENT_ID)"
-secret = "env(GITHUB_CLIENT_SECRET)"
+enabled = false
+client_id = ""
+secret = ""
 redirect_uri = "http://localhost:54321/auth/v1/callback"

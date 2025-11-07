@@ -20,21 +20,43 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
       - name: Check if frontend exists
         id: check
         run: |
           if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Frontend exists"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "⏭️ No Angular frontend, skipping"
+            echo "📦 No frontend found, will create test project"
           fi
 
-      - name: Setup Node.js
-        if: steps.check.outputs.exists == 'true'
-        uses: actions/setup-node@v5
-        with:
-          node-version: '20'
+      - name: Create test Angular project
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          echo "🏗️ Creating test Angular project..."
+          npm install -g @angular/cli
+          ng new frontend --routing --style=scss --skip-git --skip-install
+
+          cd frontend
+          npm install @supabase/supabase-js
+
+          # Create environment file
+          mkdir -p src/environments
+          cat > src/environments/environment.ts << 'EOF'
+          export const environment = {
+            production: false,
+            supabase: {
+              url: 'http://localhost:8000',
+              anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+            }
+          };
+          EOF
 
       - name: Create environment
         if: steps.check.outputs.exists == 'true'
@@ -56,24 +78,21 @@ jobs:
           timeout 120 bash -c 'until curl -f http://localhost:8000/rest/v1/ -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0" > /dev/null 2>&1; do sleep 2; done'
 
       - name: Install dependencies
-        if: steps.check.outputs.exists == 'true'
         working-directory: ./frontend
         run: npm ci
 
       - name: Build Angular
-        if: steps.check.outputs.exists == 'true'
         working-directory: ./frontend
         run: npm run build
 
       - name: Run tests
-        if: steps.check.outputs.exists == 'true'
         working-directory: ./frontend
         run: npm run test -- --watch=false --browsers=ChromeHeadless
 
       - name: Show logs on failure
-        if: failure() && steps.check.outputs.exists == 'true'
+        if: failure()
         run: docker compose -f docker/compose.yml logs --tail 50
 
       - name: Cleanup
-        if: always() && steps.check.outputs.exists == 'true'
+        if: always()
         run: make down

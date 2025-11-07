@@ -121,66 +121,18 @@ const { data, error } = await supabase
 console.log(data) // Should show Alice, Bob, Carol
 ```
 
-## Production Configuration
+## Production Setup
 
-### Environment Variables
-
-For production, update your component to use environment variables.
-
-Update `frontend/src/app/app.ts`:
+For production, just update the hardcoded URL and key in `frontend/src/app/app.ts` to your production values:
 
 ```typescript
-import { Component, OnInit } from '@angular/core'
-import { createClient } from '@supabase/supabase-js'
-import { environment } from '../environments/environment'
-
 const supabase = createClient(
-  environment.supabaseUrl,
-  environment.supabaseKey
+  'https://your-project.supabase.co',
+  'your-production-anon-key'
 )
-
-@Component({
-  selector: 'app-root',
-  template: `
-    <h1>Supabase + Angular</h1>
-    @for (user of users; track user.id) {
-      <div>{{ user.email }}</div>
-    }
-  `,
-  styles: []
-})
-export class App implements OnInit {
-  users: any[] = []
-
-  async ngOnInit() {
-    const { data } = await supabase.from('profiles').select('*')
-    if (data) this.users = data
-  }
-}
 ```
 
-Create `frontend/src/environments/environment.ts`:
-
-```typescript
-export const environment = {
-  production: false,
-  supabaseUrl: 'http://localhost:54321',
-  supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
-}
-```
-
-Create `frontend/src/environments/environment.prod.ts`:
-
-```typescript
-export const environment = {
-  production: true,
-  supabaseUrl: 'https://your-project.supabase.co',
-  supabaseKey: 'your-production-anon-key'
-}
-```
-
-Get production credentials from:
-- Supabase Dashboard → Settings → API
+Get production credentials from: **Supabase Dashboard → Settings → API**
 
 ## Git Workflow
 

@@ -30,6 +30,11 @@ jobs:
         with:
           version: latest
 
+      - name: Set up Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
       - name: Log versions
         shell: bash
         run: |
@@ -37,6 +42,7 @@ jobs:
           echo "npm version: $(npm --version)"
           echo "Supabase CLI version: $(supabase --version)"
           echo "Docker version: $(docker --version)"
+          echo "Deno version: $(deno --version)"
 
       - run: npm run dev
         shell: bash
@@ -49,6 +55,44 @@ jobs:
 
       - run: npm run diff
         shell: bash
+
+      - name: Setup admin user for tests
+        shell: bash
+        run: |
+          # Add is_admin column and set alice as admin
+          supabase db execute --sql "
+            ALTER TABLE public.profiles
+            ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false;
+
+            UPDATE public.profiles
+            SET is_admin = true
+            WHERE email = 'alice@example.com';
+          "
+
+      - name: Start Edge Functions
+        shell: bash
+        run: |
+          # Start functions in background
+          supabase functions serve &
+          FUNCTIONS_PID=$!
+          echo "FUNCTIONS_PID=$FUNCTIONS_PID" >> $GITHUB_ENV
+
+          # Wait for functions to be ready
+          echo "Waiting for Edge Functions to start..."
+          sleep 10
+
+      - name: Test Edge Functions
+        shell: bash
+        run: |
+          # Get API keys from supabase status
+          export SUPABASE_URL=$(supabase status | grep "API URL" | awk '{print $3}')
+          export SUPABASE_ANON_KEY=$(supabase status | grep "anon key" | awk '{print $3}')
+
+          echo "Testing Edge Functions..."
+          echo "SUPABASE_URL: $SUPABASE_URL"
+
+          # Run tests
+          deno run --allow-net --allow-env supabase/functions/test-functions.ts
 
       # Optional: Test database and services health (remove if not needed)
       - name: Test database connection and data

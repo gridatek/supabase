@@ -72,34 +72,53 @@ INSERT INTO auth.users (
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
--- UPDATE PROFILES
+-- CREATE/UPDATE PROFILES
 -- ============================================
--- Profiles should be auto-created by trigger, but we'll update them with more data
+-- Profiles should be auto-created by trigger, but ensure they exist and update them with more data
 
-UPDATE public.profiles SET
-    username = 'alice',
-    bio = 'Software engineer passionate about web development',
-    website = 'https://alice.dev',
-    social_links = '{"github": "alice", "twitter": "alice_dev"}',
-    is_verified = true,
-    is_admin = true  -- Alice is an admin for testing
-WHERE id = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
-
-UPDATE public.profiles SET
-    username = 'bob',
-    bio = 'Designer & creative developer',
-    website = 'https://bobdesigns.com',
-    social_links = '{"github": "bobsmith", "twitter": "bob_designs"}',
-    is_verified = true
-WHERE id = 'b1ffbc99-9c0b-4ef8-bb6d-6bb9bd380a22';
-
-UPDATE public.profiles SET
-    username = 'carol',
-    bio = 'Tech writer and content creator',
-    website = 'https://carolwrites.io',
-    social_links = '{"github": "carolw", "twitter": "carol_writes"}',
-    is_verified = false
-WHERE id = 'c2ffbc99-9c0b-4ef8-bb6d-6bb9bd380a33';
+INSERT INTO public.profiles (id, full_name, avatar_url, username, bio, website, social_links, is_verified, is_admin)
+VALUES
+    (
+        'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::uuid,
+        'Alice Johnson',
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice',
+        'alice',
+        'Software engineer passionate about web development',
+        'https://alice.dev',
+        '{"github": "alice", "twitter": "alice_dev"}',
+        true,
+        true  -- Alice is an admin for testing
+    ),
+    (
+        'b1ffbc99-9c0b-4ef8-bb6d-6bb9bd380a22'::uuid,
+        'Bob Smith',
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob',
+        'bob',
+        'Designer & creative developer',
+        'https://bobdesigns.com',
+        '{"github": "bobsmith", "twitter": "bob_designs"}',
+        true,
+        false
+    ),
+    (
+        'c2ffbc99-9c0b-4ef8-bb6d-6bb9bd380a33'::uuid,
+        'Carol Williams',
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=Carol',
+        'carol',
+        'Tech writer and content creator',
+        'https://carolwrites.io',
+        '{"github": "carolw", "twitter": "carol_writes"}',
+        false,
+        false
+    )
+ON CONFLICT (id) DO UPDATE SET
+    username = EXCLUDED.username,
+    bio = EXCLUDED.bio,
+    website = EXCLUDED.website,
+    social_links = EXCLUDED.social_links,
+    is_verified = EXCLUDED.is_verified,
+    is_admin = EXCLUDED.is_admin,
+    updated_at = NOW();
 
 -- ============================================
 -- SEED POSTS

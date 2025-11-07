@@ -10,7 +10,7 @@ New to this template? Start here:
 2. **[Migrations](./02_MIGRATIONS.md)** - Managing database changes
 3. **[CI/CD](./03_CI_CD.md)** - Automated testing and deployment
 4. **[Deployment](./04_DEPLOYMENT.md)** - Deploying to production
-5. **[Frontend Integration](./05_FRONTEND_INTEGRATION.md)** - Add your frontend (Angular, React, Vue, Next.js, Svelte)
+5. **[Frontend Integration](./05_FRONTEND_INTEGRATION.md)** - Add Angular frontend to the template
 
 ## Documentation Structure
 
@@ -55,13 +55,14 @@ New to this template? Start here:
 - Rollback strategy
 
 ### Frontend Integration Guide
-- Framework-agnostic approach (Angular, React, Vue, Next.js, Svelte)
-- Quick setup for each framework
+- Angular setup with defaults
+- Simple Supabase client configuration
 - Monorepo structure
 - Development workflow
-- Production configuration
+- Production environment configuration
 - Common features (auth, realtime, storage)
 - TypeScript types generation
+- Deployment options
 
 ## Quick Links
 

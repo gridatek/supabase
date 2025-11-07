@@ -149,7 +149,7 @@ Comprehensive guides are available in the `docs/` folder:
 2. **[Migrations](./docs/02_MIGRATIONS.md)** - Database migrations and schema management
 3. **[CI/CD](./docs/03_CI_CD.md)** - GitHub Actions workflows and automation
 4. **[Deployment](./docs/04_DEPLOYMENT.md)** - Production deployment guide
-5. **[Frontend Integration](./docs/05_FRONTEND_INTEGRATION.md)** - Add your frontend (Angular, React, Vue, Next.js, Svelte)
+5. **[Frontend Integration](./docs/05_FRONTEND_INTEGRATION.md)** - Add Angular frontend to the template
 
 📖 **[View all documentation](./docs/README.md)**
 

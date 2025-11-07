@@ -10,7 +10,7 @@ New to this template? Start here:
 2. **[Migrations](./02_MIGRATIONS.md)** - Managing database changes
 3. **[CI/CD](./03_CI_CD.md)** - Automated testing and deployment
 4. **[Deployment](./04_DEPLOYMENT.md)** - Deploying to production
-5. **[Angular Integration](./05_ANGULAR_INTEGRATION.md)** - Add Angular frontend to the template
+5. **[Frontend Integration](./05_FRONTEND_INTEGRATION.md)** - Add your frontend (Angular, React, Vue, Next.js, Svelte)
 
 ## Documentation Structure
 
@@ -54,12 +54,14 @@ New to this template? Start here:
 - Disaster recovery
 - Rollback strategy
 
-### Angular Integration Guide
-- Quick setup
+### Frontend Integration Guide
+- Framework-agnostic approach (Angular, React, Vue, Next.js, Svelte)
+- Quick setup for each framework
 - Monorepo structure
 - Development workflow
-- Git workflow
-- Production build
+- Production configuration
+- Common features (auth, realtime, storage)
+- TypeScript types generation
 
 ## Quick Links
 

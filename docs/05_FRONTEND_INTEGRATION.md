@@ -10,13 +10,15 @@ This guide shows how to add Angular to your Supabase template as a monorepo setu
 # Install Angular CLI
 npm install -g @angular/cli
 
-# Create Angular app (skip git since we're in a monorepo)
+# Create Angular app
 ng new frontend --skip-git --defaults
 
 # Install Supabase client
 cd frontend
 npm install @supabase/supabase-js
 ```
+
+> **Note**: Uses `--skip-git` since we're in a monorepo, and `--defaults` to skip all prompts.
 
 ### Configure Supabase Connection
 
@@ -51,7 +53,7 @@ export class App implements OnInit {
 }
 ```
 
-> **Note**: Uses Angular's modern standalone components and `@for` control flow. The API key shown is the default Supabase CLI key for local development only.
+> **Note**: Angular 18+ uses standalone components by default (no NgModules) and the new `@for` control flow syntax. The API key shown is the default Supabase CLI key for local development only.
 
 ## Monorepo Structure
 

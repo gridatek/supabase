@@ -19,8 +19,9 @@ project/
 ## Quick Start Guide
 
 ### Prerequisites
-- [Docker Desktop](https://docs.docker.com/desktop/) installed and running
+- [Docker Desktop](https://docs.docker.com/desktop/) installed and running (required for local development)
 - Node.js 18+ and npm
+- **Note**: GitHub Actions automatically sets up Docker on all platforms (Ubuntu, Windows, macOS)
 
 ### Start in 3 Commands
 
@@ -29,7 +30,7 @@ git clone https://github.com/gridatek/supabase.git
 cd supabase
 npm run dev
 
-# That's it! Supabase is running
+# That's it! Supabase is running on all platforms
 ```
 
 ### Seed Test Data
@@ -97,15 +98,23 @@ Once running (`npm run dev`), services are available at:
 ## CI/CD Workflows
 
 ### Main CI (`ci.yml`)
-- Uses Supabase CLI for testing
-- Runs on push/PR to main branches
-- Tests migrations and database operations
+- **Multi-platform testing**: Ubuntu, Windows, macOS
+- **Automated Docker setup**: Uses `docker/setup-docker-action` for cross-platform compatibility
+- **Database testing**: Runs migrations, checks diff, and validates data
+- **Health checks**: Tests API endpoints and database connectivity
+- **Dogfooding**: Uses same npm commands as local development
 
-### Local Dev Test (`local-dev-test.yml`)
-- Tests Docker Compose environment
-- Validates service connectivity
-- Can be triggered manually
-- Comprehensive health checks
+The workflow includes an optional health check step that verifies:
+- API services are responding
+- Database tables are accessible
+- Seed data is loaded correctly
+
+Users can remove the health check step if not needed.
+
+### Angular Integration (`angular-integration.yml`)
+- Only runs when frontend/ or supabase/ directories change
+- Tests Angular app build and unit tests
+- Validates integration with Supabase backend
 
 ## Architecture
 

@@ -12,7 +12,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
+        # Note: Windows excluded - Supabase requires Docker which isn't well supported on Windows runners
 
     steps:
       - uses: actions/checkout@v5

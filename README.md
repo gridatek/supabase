@@ -34,8 +34,8 @@ project/
 
 ```bash
 # 1. Clone the repository
-git clone <your-repo>
-cd <your-project>
+git clone https://github.com/gridatek/supabase.git
+cd supabase
 
 # 2. Copy environment files
 cp docker/.env.example docker/.env

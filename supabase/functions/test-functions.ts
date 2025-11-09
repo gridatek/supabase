@@ -41,13 +41,18 @@ async function login(email: string, password: string): Promise<string | null> {
 
     if (!response.ok) {
       const error = await response.text()
-      throw new Error(`Login failed: ${error}`)
+      console.error(`Login failed with status ${response.status}:`, error)
+      throw new Error(`Login failed (${response.status}): ${error}`)
     }
 
     const data = await response.json()
+    if (!data.access_token) {
+      console.error('Login response missing access_token:', data)
+      throw new Error('Login response missing access_token')
+    }
     return data.access_token
   } catch (error) {
-    console.error('Login error:', error)
+    console.error('Login error for', email, ':', error.message)
     return null
   }
 }
@@ -244,7 +249,17 @@ async function testNonAdminAccess(email: string, password: string): Promise<bool
 async function main() {
   console.log('🧪 Testing Edge Functions\n')
   console.log(`📍 Supabase URL: ${SUPABASE_URL}`)
-  console.log(`🔑 API Key: ${SUPABASE_ANON_KEY.substring(0, 20)}...\n`)
+  console.log(`🔑 API Key: ${SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 20) + '...' : 'NOT SET'}\n`)
+
+  // Validate environment
+  if (!SUPABASE_URL) {
+    console.error('❌ SUPABASE_URL is not set')
+    Deno.exit(1)
+  }
+  if (!SUPABASE_ANON_KEY) {
+    console.error('❌ SUPABASE_ANON_KEY is not set')
+    Deno.exit(1)
+  }
 
   // Test 1: Unauthorized access
   console.log('Testing security...')

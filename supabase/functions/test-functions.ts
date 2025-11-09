@@ -197,13 +197,19 @@ async function testUnauthorizedAccess(): Promise<boolean> {
       }),
     })
 
-    const data = await response.json()
+    let data
+    try {
+      data = await response.json()
+    } catch (e) {
+      throw new Error(`Failed to parse response (status ${response.status}): ${e.message}`)
+    }
 
     if (response.status === 401 && data.error) {
       logTest('Unauthorized Access Prevention', true)
       return true
     } else {
-      throw new Error(`Should have rejected unauthorized request (got status ${response.status})`)
+      console.error('Unexpected response:', { status: response.status, data })
+      throw new Error(`Should have rejected unauthorized request (got status ${response.status}, data: ${JSON.stringify(data)})`)
     }
   } catch (error) {
     logTest('Unauthorized Access Prevention', false, error.message)
@@ -258,6 +264,24 @@ async function main() {
   }
   if (!SUPABASE_ANON_KEY) {
     console.error('❌ SUPABASE_ANON_KEY is not set')
+    Deno.exit(1)
+  }
+
+  // Test 0: Verify Edge Functions endpoint is accessible
+  console.log('Verifying Edge Functions are accessible...')
+  try {
+    const testResponse = await fetch(`${SUPABASE_URL}/functions/v1/admin-create-user`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    })
+    console.log(`✅ Edge Functions endpoint responding (status: ${testResponse.status})\n`)
+  } catch (error) {
+    console.error('❌ Cannot reach Edge Functions endpoint:', error.message)
+    console.error('Make sure Supabase is running and Edge Functions are deployed')
     Deno.exit(1)
   }
 

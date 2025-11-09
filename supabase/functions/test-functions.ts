@@ -294,8 +294,23 @@ async function main() {
   const adminToken = await login('alice@example.com', 'password123')
 
   if (!adminToken) {
-    console.error('❌ Failed to login as admin. Make sure alice is an admin.')
-    console.error('   Run: UPDATE public.profiles SET is_admin = true WHERE email = \'alice@example.com\';')
+    console.error('❌ Failed to login as admin.')
+    console.error('   Checking if users exist in database...')
+
+    // Try to check if users exist via REST API
+    try {
+      const checkUsers = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=username,is_admin`, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+      })
+      const profiles = await checkUsers.json()
+      console.error('   Profiles in database:', JSON.stringify(profiles, null, 2))
+    } catch (e) {
+      console.error('   Could not check profiles:', e.message)
+    }
+
     Deno.exit(1)
   }
 

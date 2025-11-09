@@ -120,9 +120,13 @@ jobs:
 
           echo "✅ All services responding and database accessible"
 
-      - run: npm run logs
+      - name: Show logs on failure
         if: failure()
         shell: bash
+        run: |
+          echo "Showing Supabase container logs..."
+          docker logs supabase_db_supabase-template --tail 50 || echo "Could not fetch database logs"
+          docker logs supabase_kong_supabase-template --tail 50 || echo "Could not fetch API gateway logs"
 
       - run: npm run stop
         if: always()

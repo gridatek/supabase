@@ -41,13 +41,18 @@ async function login(email: string, password: string): Promise<string | null> {
 
     if (!response.ok) {
       const error = await response.text()
-      throw new Error(`Login failed: ${error}`)
+      console.error(`Login failed with status ${response.status}:`, error)
+      throw new Error(`Login failed (${response.status}): ${error}`)
     }
 
     const data = await response.json()
+    if (!data.access_token) {
+      console.error('Login response missing access_token:', data)
+      throw new Error('Login response missing access_token')
+    }
     return data.access_token
   } catch (error) {
-    console.error('Login error:', error)
+    console.error('Login error for', email, ':', error.message)
     return null
   }
 }
@@ -57,6 +62,7 @@ async function testCreateUser(token: string, testEmail: string): Promise<string 
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-create-user`, {
       method: 'POST',
       headers: {
+        'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
@@ -90,6 +96,7 @@ async function testListUsers(token: string): Promise<boolean> {
   try {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-list-users`, {
       headers: {
+        'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${token}`,
       },
     })
@@ -117,6 +124,7 @@ async function testUpdateUser(token: string, userId: string): Promise<boolean> {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-update-user`, {
       method: 'POST',
       headers: {
+        'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
@@ -150,6 +158,7 @@ async function testDeleteUser(token: string, userId: string): Promise<boolean> {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-delete-user`, {
       method: 'POST',
       headers: {
+        'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
@@ -179,6 +188,7 @@ async function testUnauthorizedAccess(): Promise<boolean> {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-create-user`, {
       method: 'POST',
       headers: {
+        'apikey': SUPABASE_ANON_KEY,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -187,13 +197,19 @@ async function testUnauthorizedAccess(): Promise<boolean> {
       }),
     })
 
-    const data = await response.json()
+    let data
+    try {
+      data = await response.json()
+    } catch (e) {
+      throw new Error(`Failed to parse response (status ${response.status}): ${e.message}`)
+    }
 
     if (response.status === 401 && data.error) {
       logTest('Unauthorized Access Prevention', true)
       return true
     } else {
-      throw new Error('Should have rejected unauthorized request')
+      console.error('Unexpected response:', { status: response.status, data })
+      throw new Error(`Should have rejected unauthorized request (got status ${response.status}, data: ${JSON.stringify(data)})`)
     }
   } catch (error) {
     logTest('Unauthorized Access Prevention', false, error.message)
@@ -212,6 +228,7 @@ async function testNonAdminAccess(email: string, password: string): Promise<bool
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-create-user`, {
       method: 'POST',
       headers: {
+        'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
@@ -227,7 +244,7 @@ async function testNonAdminAccess(email: string, password: string): Promise<bool
       logTest('Non-Admin Access Prevention', true)
       return true
     } else {
-      throw new Error('Should have rejected non-admin request')
+      throw new Error(`Should have rejected non-admin request (got status ${response.status})`)
     }
   } catch (error) {
     logTest('Non-Admin Access Prevention', false, error.message)
@@ -238,7 +255,35 @@ async function testNonAdminAccess(email: string, password: string): Promise<bool
 async function main() {
   console.log('🧪 Testing Edge Functions\n')
   console.log(`📍 Supabase URL: ${SUPABASE_URL}`)
-  console.log(`🔑 API Key: ${SUPABASE_ANON_KEY.substring(0, 20)}...\n`)
+  console.log(`🔑 API Key: ${SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 20) + '...' : 'NOT SET'}\n`)
+
+  // Validate environment
+  if (!SUPABASE_URL) {
+    console.error('❌ SUPABASE_URL is not set')
+    Deno.exit(1)
+  }
+  if (!SUPABASE_ANON_KEY) {
+    console.error('❌ SUPABASE_ANON_KEY is not set')
+    Deno.exit(1)
+  }
+
+  // Test 0: Verify Edge Functions endpoint is accessible
+  console.log('Verifying Edge Functions are accessible...')
+  try {
+    const testResponse = await fetch(`${SUPABASE_URL}/functions/v1/admin-create-user`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    })
+    console.log(`✅ Edge Functions endpoint responding (status: ${testResponse.status})\n`)
+  } catch (error) {
+    console.error('❌ Cannot reach Edge Functions endpoint:', error.message)
+    console.error('Make sure Supabase is running and Edge Functions are deployed')
+    Deno.exit(1)
+  }
 
   // Test 1: Unauthorized access
   console.log('Testing security...')
@@ -249,8 +294,23 @@ async function main() {
   const adminToken = await login('alice@example.com', 'password123')
 
   if (!adminToken) {
-    console.error('❌ Failed to login as admin. Make sure alice is an admin.')
-    console.error('   Run: UPDATE public.profiles SET is_admin = true WHERE email = \'alice@example.com\';')
+    console.error('❌ Failed to login as admin.')
+    console.error('   Checking if users exist in database...')
+
+    // Try to check if users exist via REST API
+    try {
+      const checkUsers = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=username,is_admin`, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+      })
+      const profiles = await checkUsers.json()
+      console.error('   Profiles in database:', JSON.stringify(profiles, null, 2))
+    } catch (e) {
+      console.error('   Could not check profiles:', e.message)
+    }
+
     Deno.exit(1)
   }
 

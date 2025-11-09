@@ -25,7 +25,9 @@ INSERT INTO auth.users (
     updated_at,
     confirmation_token,
     role,
-    aud
+    aud,
+    is_sso_user,
+    is_super_admin
 ) VALUES
     -- User 1: Alice
     (
@@ -39,7 +41,9 @@ INSERT INTO auth.users (
         NOW(),
         '',
         'authenticated',
-        'authenticated'
+        'authenticated',
+        false,
+        false
     ),
     -- User 2: Bob
     (
@@ -53,7 +57,9 @@ INSERT INTO auth.users (
         NOW(),
         '',
         'authenticated',
-        'authenticated'
+        'authenticated',
+        false,
+        false
     ),
     -- User 3: Carol
     (
@@ -67,7 +73,9 @@ INSERT INTO auth.users (
         NOW(),
         '',
         'authenticated',
-        'authenticated'
+        'authenticated',
+        false,
+        false
     )
 ON CONFLICT (id) DO NOTHING;
 

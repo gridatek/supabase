@@ -65,7 +65,7 @@ Total: 6 | Passed: 6 | Failed: 0
 # 1. Get your API key
 npm run status
 
-# Copy the "anon key"
+# Copy the "Publishable key"
 
 # 2. Login as admin
 curl -X POST 'http://localhost:54321/auth/v1/token?grant_type=password' \
@@ -198,7 +198,7 @@ See `.github/workflows/ci.yml`:
 - name: Test Edge Functions
   run: |
     export SUPABASE_URL=$(supabase status | grep "API URL" | awk '{print $3}')
-    export SUPABASE_ANON_KEY=$(supabase status | grep "anon key" | awk '{print $3}')
+    export SUPABASE_ANON_KEY=$(supabase status | grep "Publishable key" | awk '{print $3}')
     deno run --allow-net --allow-env supabase/functions/test-functions.ts
 ```
 

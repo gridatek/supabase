@@ -62,14 +62,35 @@ jobs:
       - name: Start Edge Functions
         shell: bash
         run: |
-          # Start functions in background
-          supabase functions serve &
+          # Start functions in background with explicit output
+          echo "Starting Edge Functions..."
+          supabase functions serve > functions.log 2>&1 &
           FUNCTIONS_PID=$!
           echo "FUNCTIONS_PID=$FUNCTIONS_PID" >> $GITHUB_ENV
+          echo "Functions started with PID: $FUNCTIONS_PID"
 
-          # Wait for functions to be ready
+          # Wait for functions to be ready (increased timeout)
           echo "Waiting for Edge Functions to start..."
-          sleep 10
+          sleep 15
+
+          # Verify functions are running
+          if ps -p $FUNCTIONS_PID > /dev/null; then
+            echo "✅ Edge Functions process is running"
+          else
+            echo "❌ Edge Functions process failed to start"
+            cat functions.log
+            exit 1
+          fi
+
+          # Check if functions endpoint is responding
+          for i in {1..10}; do
+            if curl -f http://127.0.0.1:54321/functions/v1/ 2>/dev/null; then
+              echo "✅ Edge Functions endpoint is responding"
+              break
+            fi
+            echo "Waiting for functions endpoint... attempt $i/10"
+            sleep 2
+          done
 
       - name: Test Edge Functions
         shell: bash
@@ -80,6 +101,20 @@ jobs:
 
           echo "Testing Edge Functions..."
           echo "SUPABASE_URL: $SUPABASE_URL"
+          echo "SUPABASE_ANON_KEY length: ${#SUPABASE_ANON_KEY}"
+
+          # Verify we got the API key
+          if [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "❌ Failed to get SUPABASE_ANON_KEY from status"
+            supabase status
+            exit 1
+          fi
+
+          # Check if functions log has any errors
+          if [ -f functions.log ]; then
+            echo "Edge Functions log:"
+            tail -20 functions.log
+          fi
 
           # Run tests
           deno run --allow-net --allow-env supabase/functions/test-functions.ts

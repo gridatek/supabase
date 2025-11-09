@@ -57,6 +57,7 @@ async function testCreateUser(token: string, testEmail: string): Promise<string 
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-create-user`, {
       method: 'POST',
       headers: {
+        'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
@@ -90,6 +91,7 @@ async function testListUsers(token: string): Promise<boolean> {
   try {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-list-users`, {
       headers: {
+        'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${token}`,
       },
     })
@@ -117,6 +119,7 @@ async function testUpdateUser(token: string, userId: string): Promise<boolean> {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-update-user`, {
       method: 'POST',
       headers: {
+        'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
@@ -150,6 +153,7 @@ async function testDeleteUser(token: string, userId: string): Promise<boolean> {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-delete-user`, {
       method: 'POST',
       headers: {
+        'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
@@ -179,6 +183,7 @@ async function testUnauthorizedAccess(): Promise<boolean> {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-create-user`, {
       method: 'POST',
       headers: {
+        'apikey': SUPABASE_ANON_KEY,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -193,7 +198,7 @@ async function testUnauthorizedAccess(): Promise<boolean> {
       logTest('Unauthorized Access Prevention', true)
       return true
     } else {
-      throw new Error('Should have rejected unauthorized request')
+      throw new Error(`Should have rejected unauthorized request (got status ${response.status})`)
     }
   } catch (error) {
     logTest('Unauthorized Access Prevention', false, error.message)
@@ -212,6 +217,7 @@ async function testNonAdminAccess(email: string, password: string): Promise<bool
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-create-user`, {
       method: 'POST',
       headers: {
+        'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
@@ -227,7 +233,7 @@ async function testNonAdminAccess(email: string, password: string): Promise<bool
       logTest('Non-Admin Access Prevention', true)
       return true
     } else {
-      throw new Error('Should have rejected non-admin request')
+      throw new Error(`Should have rejected non-admin request (got status ${response.status})`)
     }
   } catch (error) {
     logTest('Non-Admin Access Prevention', false, error.message)

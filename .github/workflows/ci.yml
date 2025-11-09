@@ -59,6 +59,22 @@ jobs:
       - run: npm run seed
         shell: bash
 
+      - name: Debug - Check seeded data
+        shell: bash
+        run: |
+          echo "Checking seeded users and profiles..."
+          API_URL=$(supabase status | grep "API URL" | awk '{print $3}')
+          ANON_KEY=$(supabase status | grep "Publishable key" | awk '{print $3}')
+
+          echo "Checking auth.users count..."
+          docker exec supabase_db_supabase-template psql -U postgres -d postgres -c "SELECT COUNT(*) as user_count FROM auth.users WHERE email LIKE '%@example.com';" || echo "Failed to query auth.users"
+
+          echo "Checking profiles..."
+          curl -s -H "apikey: $ANON_KEY" "$API_URL/rest/v1/profiles?select=username,is_admin" | jq '.' || echo "Failed to query profiles"
+
+          echo "Checking auth.users details..."
+          docker exec supabase_db_supabase-template psql -U postgres -d postgres -c "SELECT id, email, email_confirmed_at, is_sso_user FROM auth.users WHERE email LIKE '%@example.com';" || echo "Failed to query user details"
+
       - name: Verify Edge Functions are ready
         shell: bash
         run: |
@@ -98,9 +114,28 @@ jobs:
           fi
 
           echo "✅ Environment configured, running tests..."
+          echo ""
+          echo "=========================================="
+          echo "Starting Edge Functions Tests"
+          echo "=========================================="
+          echo ""
 
-          # Run tests
-          deno run --allow-net --allow-env supabase/functions/test-functions.ts
+          # Run tests with full output
+          deno run --allow-net --allow-env supabase/functions/test-functions.ts 2>&1 || TEST_EXIT_CODE=$?
+
+          echo ""
+          echo "=========================================="
+          echo "Test execution completed with exit code: ${TEST_EXIT_CODE:-0}"
+          echo "=========================================="
+
+          if [ ! -z "$TEST_EXIT_CODE" ] && [ "$TEST_EXIT_CODE" != "0" ]; then
+            echo ""
+            echo "Tests failed, checking database state..."
+            docker exec supabase_db_supabase-template psql -U postgres -d postgres -c "SELECT email, created_at, email_confirmed_at FROM auth.users WHERE email LIKE '%@example.com';" || echo "Could not query auth.users"
+            echo ""
+            docker logs supabase_db_supabase-template 2>&1 | tail -100
+            exit $TEST_EXIT_CODE
+          fi
 
       # Optional: Test database and services health (remove if not needed)
       - name: Test database connection and data
@@ -124,9 +159,20 @@ jobs:
         if: failure()
         shell: bash
         run: |
+          echo "=========================================="
           echo "Showing Supabase container logs..."
-          docker logs supabase_db_supabase-template --tail 50 || echo "Could not fetch database logs"
-          docker logs supabase_kong_supabase-template --tail 50 || echo "Could not fetch API gateway logs"
+          echo "=========================================="
+          echo ""
+          echo "--- Database Logs (last 100 lines) ---"
+          docker logs supabase_db_supabase-template --tail 100 2>&1 || echo "Could not fetch database logs"
+          echo ""
+          echo "--- Kong API Gateway Logs (last 50 lines) ---"
+          docker logs supabase_kong_supabase-template --tail 50 2>&1 || echo "Could not fetch API gateway logs"
+          echo ""
+          echo "--- Auth GoTrue Logs (last 50 lines) ---"
+          docker logs supabase_auth_supabase-template --tail 50 2>&1 || echo "Could not fetch auth logs"
+          echo ""
+          echo "=========================================="
 
       - run: npm run stop
         if: always()

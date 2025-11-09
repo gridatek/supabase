@@ -10,6 +10,9 @@
 -- Clear existing seed data (optional - comment out if you want to keep data)
 -- TRUNCATE auth.users CASCADE;
 
+-- Temporarily disable the trigger to avoid conflicts during seeding
+ALTER TABLE auth.users DISABLE TRIGGER on_auth_user_created;
+
 -- Insert test users into auth.users
 -- Password for all test users: "password123"
 -- Hashed with bcrypt: $2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iqaG1vv..mRyS
@@ -220,6 +223,9 @@ INSERT INTO public.follows (follower_id, following_id) VALUES
     ('c2ffbc99-9c0b-4ef8-bb6d-6bb9bd380a33', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'),
     ('c2ffbc99-9c0b-4ef8-bb6d-6bb9bd380a33', 'b1ffbc99-9c0b-4ef8-bb6d-6bb9bd380a22')
 ON CONFLICT (follower_id, following_id) DO NOTHING;
+
+-- Re-enable the trigger
+ALTER TABLE auth.users ENABLE TRIGGER on_auth_user_created;
 
 -- ============================================
 -- VERIFICATION

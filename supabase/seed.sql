@@ -72,6 +72,49 @@ INSERT INTO auth.users (
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
+-- SEED IDENTITIES (required for auth to work)
+-- ============================================
+-- Auth requires identities for each user to authenticate properly
+
+INSERT INTO auth.identities (
+    id,
+    user_id,
+    identity_data,
+    provider,
+    last_sign_in_at,
+    created_at,
+    updated_at
+) VALUES
+    (
+        'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::uuid,
+        'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::uuid,
+        jsonb_build_object('sub', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::text, 'email', 'alice@example.com'),
+        'email',
+        NOW(),
+        NOW(),
+        NOW()
+    ),
+    (
+        'b1ffbc99-9c0b-4ef8-bb6d-6bb9bd380a22'::uuid,
+        'b1ffbc99-9c0b-4ef8-bb6d-6bb9bd380a22'::uuid,
+        jsonb_build_object('sub', 'b1ffbc99-9c0b-4ef8-bb6d-6bb9bd380a22'::text, 'email', 'bob@example.com'),
+        'email',
+        NOW(),
+        NOW(),
+        NOW()
+    ),
+    (
+        'c2ffbc99-9c0b-4ef8-bb6d-6bb9bd380a33'::uuid,
+        'c2ffbc99-9c0b-4ef8-bb6d-6bb9bd380a33'::uuid,
+        jsonb_build_object('sub', 'c2ffbc99-9c0b-4ef8-bb6d-6bb9bd380a33'::text, 'email', 'carol@example.com'),
+        'email',
+        NOW(),
+        NOW(),
+        NOW()
+    )
+ON CONFLICT (id, provider) DO NOTHING;
+
+-- ============================================
 -- CREATE/UPDATE PROFILES
 -- ============================================
 -- Profiles should be auto-created by trigger, but ensure they exist and update them with more data

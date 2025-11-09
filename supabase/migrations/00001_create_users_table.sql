@@ -30,13 +30,20 @@ CREATE POLICY "Users can update their own profile"
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
+-- Only insert if profile doesn't already exist
 INSERT INTO public.profiles (id, full_name, avatar_url)
 VALUES (
            new.id,
            new.raw_user_meta_data->>'full_name',
            new.raw_user_meta_data->>'avatar_url'
-       );
+       )
+ON CONFLICT (id) DO NOTHING;
 RETURN new;
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Log error but don't fail user creation
+        RAISE WARNING 'Error creating profile for user %: %', new.id, SQLERRM;
+        RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

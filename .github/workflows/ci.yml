@@ -59,6 +59,20 @@ jobs:
       - run: npm run seed
         shell: bash
 
+      - name: Wait for Edge Functions to be ready
+        shell: bash
+        run: |
+          echo "Waiting for Edge Functions to be ready..."
+          # Edge Functions are automatically served by 'supabase start'
+          # Give them a moment to initialize
+          sleep 5
+
+          # List available functions
+          echo "Checking for deployed functions..."
+          ls -la supabase/functions/
+
+          echo "Edge Functions should be available at http://127.0.0.1:54321/functions/v1/"
+
       - name: Debug - Check seeded data
         shell: bash
         run: |
@@ -66,32 +80,56 @@ jobs:
           API_URL=$(supabase status | grep "API URL" | awk '{print $3}')
           ANON_KEY=$(supabase status | grep "Publishable key" | awk '{print $3}')
 
+          echo "API_URL: $API_URL"
+          echo "ANON_KEY length: ${#ANON_KEY}"
+
           echo "Checking auth.users count..."
           docker exec supabase_db_supabase-template psql -U postgres -d postgres -c "SELECT COUNT(*) as user_count FROM auth.users WHERE email LIKE '%@example.com';" || echo "Failed to query auth.users"
 
           echo "Checking profiles..."
           curl -s -H "apikey: $ANON_KEY" "$API_URL/rest/v1/profiles?select=username,is_admin" | jq '.' || echo "Failed to query profiles"
 
-          echo "Checking auth.users details..."
-          docker exec supabase_db_supabase-template psql -U postgres -d postgres -c "SELECT id, email, email_confirmed_at, is_sso_user FROM auth.users WHERE email LIKE '%@example.com';" || echo "Failed to query user details"
+          echo "Checking auth.users details (email, confirmed, encrypted_password)..."
+          docker exec supabase_db_supabase-template psql -U postgres -d postgres -c "SELECT id, email, email_confirmed_at, encrypted_password IS NOT NULL as has_password, is_sso_user FROM auth.users WHERE email LIKE '%@example.com';" || echo "Failed to query user details"
+
+          echo "Testing login manually..."
+          LOGIN_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "$API_URL/auth/v1/token?grant_type=password" \
+            -H "apikey: $ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"email":"alice@example.com","password":"password123"}')
+
+          echo "Login response:"
+          echo "$LOGIN_RESPONSE" | head -n -1 | jq '.' || echo "$LOGIN_RESPONSE" | head -n -1
+          echo "HTTP Status: $(echo "$LOGIN_RESPONSE" | tail -n 1 | cut -d: -f2)"
 
       - name: Verify Edge Functions are ready
         shell: bash
         run: |
           echo "Verifying Edge Functions endpoint..."
           # Edge Functions are automatically served by 'supabase start' (via npm run dev)
-          # Just verify the endpoint is accessible
+          # Test the actual admin-create-user function
 
-          for i in {1..5}; do
-            if curl -s http://127.0.0.1:54321/functions/v1/health 2>/dev/null || curl -s http://127.0.0.1:54321/functions/v1/ 2>/dev/null; then
-              echo "✅ Edge Functions endpoint is accessible"
+          for i in {1..10}; do
+            RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST http://127.0.0.1:54321/functions/v1/admin-create-user \
+              -H "Content-Type: application/json" \
+              -d '{}' 2>&1)
+
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n 1 | cut -d: -f2)
+
+            if [ "$HTTP_CODE" == "401" ] || [ "$HTTP_CODE" == "400" ] || [ "$HTTP_CODE" == "403" ]; then
+              echo "✅ Edge Functions endpoint is accessible (HTTP $HTTP_CODE - expected for unauthenticated request)"
               break
             fi
-            if [ $i -eq 5 ]; then
-              echo "⚠️  Edge Functions endpoint not responding, but continuing (functions are auto-served by Supabase)"
+
+            if [ $i -eq 10 ]; then
+              echo "❌ Edge Functions endpoint not responding after 10 attempts"
+              echo "Last response:"
+              echo "$RESPONSE" | head -n -1
+              echo "HTTP Code: $HTTP_CODE"
+              exit 1
             else
-              echo "Checking Edge Functions endpoint... attempt $i/5"
-              sleep 2
+              echo "Checking Edge Functions endpoint... attempt $i/10 (HTTP $HTTP_CODE)"
+              sleep 3
             fi
           done
 

@@ -59,6 +59,47 @@ jobs:
       - run: npm run seed
         shell: bash
 
+      - name: Wait for services to be ready after reset
+        shell: bash
+        run: |
+          echo "Waiting for all services to stabilize after database reset..."
+          echo "Database reset restarts auth and other services, need to wait for them to be ready"
+          sleep 15
+
+          # Verify database is ready
+          echo "Checking database..."
+          docker exec supabase_db_supabase-template psql -U postgres -d postgres -c "SELECT 1" >/dev/null || {
+            echo "❌ Database not responding"
+            exit 1
+          }
+          echo "✅ Database is ready"
+
+          # Verify auth service is responding
+          echo "Checking auth service health..."
+          for i in {1..10}; do
+            if curl -sf http://127.0.0.1:54321/auth/v1/health >/dev/null 2>&1; then
+              echo "✅ Auth service is healthy"
+              break
+            fi
+            if [ $i -eq 10 ]; then
+              echo "❌ Auth service not responding after 10 attempts"
+              docker logs supabase_auth_supabase-template --tail 50
+              exit 1
+            fi
+            echo "Waiting for auth service... attempt $i/10"
+            sleep 3
+          done
+
+          # Verify seeded users exist and can be queried
+          echo "Verifying seeded data..."
+          USER_COUNT=$(docker exec supabase_db_supabase-template psql -U postgres -d postgres -t -c "SELECT COUNT(*) FROM auth.users WHERE email LIKE '%@example.com'")
+          echo "Found $USER_COUNT test users"
+          if [ "$USER_COUNT" -lt 3 ]; then
+            echo "❌ Expected at least 3 test users, found $USER_COUNT"
+            exit 1
+          fi
+          echo "✅ All services ready and data seeded"
+
       - name: Deploy and verify Edge Functions
         shell: bash
         run: |

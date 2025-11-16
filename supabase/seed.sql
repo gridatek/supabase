@@ -1,6 +1,9 @@
 -- Seed file for development and testing
 -- This file is safe to run multiple times (uses upserts/checks)
 
+-- Enable pgcrypto extension for password hashing
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- ============================================
 -- SEED USERS (via auth.users)
 -- ============================================
@@ -12,7 +15,8 @@
 
 -- Insert test users into auth.users
 -- Password for all test users: "password123"
--- Hashed with bcrypt: $2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iqaG1vv..mRyS
+-- Using PostgreSQL's crypt() to generate bcrypt hash at insert time
+-- This ensures compatibility with GoTrue's password verification
 
 INSERT INTO auth.users (
     id,
@@ -24,50 +28,90 @@ INSERT INTO auth.users (
     created_at,
     updated_at,
     confirmation_token,
+    email_change,
+    email_change_token_new,
+    email_change_token_current,
+    email_change_confirm_status,
+    recovery_token,
+    phone_change,
+    phone_change_token,
+    reauthentication_token,
     role,
-    aud
+    aud,
+    is_sso_user,
+    is_super_admin
 ) VALUES
     -- User 1: Alice
     (
         'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::uuid,
         '00000000-0000-0000-0000-000000000000'::uuid,
         'alice@example.com',
-        '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iqaG1vv..mRyS',
+        crypt('password123', gen_salt('bf')),
         NOW(),
         '{"full_name": "Alice Johnson", "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=Alice"}',
         NOW(),
         NOW(),
         '',
+        '',
+        '',
+        '',
+        0,
+        '',
+        '',
+        '',
+        '',
         'authenticated',
-        'authenticated'
+        'authenticated',
+        false,
+        false
     ),
     -- User 2: Bob
     (
         'b1ffbc99-9c0b-4ef8-bb6d-6bb9bd380a22'::uuid,
         '00000000-0000-0000-0000-000000000000'::uuid,
         'bob@example.com',
-        '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iqaG1vv..mRyS',
+        crypt('password123', gen_salt('bf')),
         NOW(),
         '{"full_name": "Bob Smith", "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=Bob"}',
         NOW(),
         NOW(),
         '',
+        '',
+        '',
+        '',
+        0,
+        '',
+        '',
+        '',
+        '',
         'authenticated',
-        'authenticated'
+        'authenticated',
+        false,
+        false
     ),
     -- User 3: Carol
     (
         'c2ffbc99-9c0b-4ef8-bb6d-6bb9bd380a33'::uuid,
         '00000000-0000-0000-0000-000000000000'::uuid,
         'carol@example.com',
-        '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iqaG1vv..mRyS',
+        crypt('password123', gen_salt('bf')),
         NOW(),
         '{"full_name": "Carol Williams", "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=Carol"}',
         NOW(),
         NOW(),
         '',
+        '',
+        '',
+        '',
+        0,
+        '',
+        '',
+        '',
+        '',
         'authenticated',
-        'authenticated'
+        'authenticated',
+        false,
+        false
     )
 ON CONFLICT (id) DO NOTHING;
 

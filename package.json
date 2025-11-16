@@ -11,7 +11,7 @@
     "migrate:prod": "supabase db push",
     "diff": "supabase db diff",
     "status": "supabase status",
-    "logs": "supabase logs",
+    "logs": "docker logs supabase_db_supabase-template --tail 100",
     "shell": "supabase db shell",
     "types": "supabase gen types typescript --local > types/database.types.ts",
     "link": "supabase link"

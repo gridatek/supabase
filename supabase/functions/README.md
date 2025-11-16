@@ -45,7 +45,7 @@ This will start all functions at:
 
 ### 3. Test Functions
 
-**Get your anon key:**
+**Get your publishable key:**
 ```bash
 npm run status
 ```

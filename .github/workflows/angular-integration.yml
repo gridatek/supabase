@@ -30,9 +30,6 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v3
-
       - uses: supabase/setup-cli@v1
         with:
           version: latest

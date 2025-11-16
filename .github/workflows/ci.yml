@@ -59,26 +59,40 @@ jobs:
       - run: npm run seed
         shell: bash
 
-      - name: Wait for Edge Functions to be ready
+      - name: Deploy and verify Edge Functions
         shell: bash
         run: |
-          echo "Waiting for Edge Functions to be ready..."
-          # Edge Functions are automatically served by 'supabase start'
-          # Give them a moment to initialize
-          sleep 5
-
-          # List available functions
-          echo "Checking for deployed functions..."
+          echo "Checking Edge Functions setup..."
           ls -la supabase/functions/
 
-          echo "Edge Functions should be available at http://127.0.0.1:54321/functions/v1/"
+          # In modern Supabase CLI, functions should be auto-served by 'supabase start'
+          # However, let's verify the edge-runtime container is running
+          echo ""
+          echo "Checking if edge-runtime is running..."
+          docker ps | grep edge-runtime || echo "⚠️  edge-runtime container not found"
+
+          # Check Supabase status for functions
+          echo ""
+          echo "Supabase status:"
+          supabase status
+
+          echo ""
+          echo "Waiting 10 seconds for Edge Functions to initialize..."
+          sleep 10
 
       - name: Debug - Check seeded data
         shell: bash
         run: |
           echo "Checking seeded users and profiles..."
-          API_URL=$(supabase status | grep "API URL" | awk '{print $3}')
-          ANON_KEY=$(supabase status | grep "Publishable key" | awk '{print $3}')
+          STATUS_OUTPUT=$(supabase status)
+
+          API_URL=$(echo "$STATUS_OUTPUT" | grep -i "API URL" | head -n1 | awk '{print $NF}')
+          ANON_KEY=$(echo "$STATUS_OUTPUT" | grep -i "anon key\|publishable" | head -n1 | awk '{print $NF}')
+
+          # Fallback
+          if [ -z "$API_URL" ]; then
+            API_URL="http://127.0.0.1:54321"
+          fi
 
           echo "API_URL: $API_URL"
           echo "ANON_KEY length: ${#ANON_KEY}"
@@ -136,18 +150,30 @@ jobs:
       - name: Test Edge Functions
         shell: bash
         run: |
-          # Get API keys from supabase status
-          export SUPABASE_URL=$(supabase status | grep "API URL" | awk '{print $3}')
-          export SUPABASE_ANON_KEY=$(supabase status | grep "Publishable key" | awk '{print $3}')
+          # Get API keys from supabase status with better parsing
+          echo "Getting configuration from Supabase..."
+          STATUS_OUTPUT=$(supabase status)
+          echo "$STATUS_OUTPUT"
+          echo ""
+
+          # Extract values using different methods for reliability
+          export SUPABASE_URL=$(echo "$STATUS_OUTPUT" | grep -i "API URL" | head -n1 | awk '{print $NF}')
+          export SUPABASE_ANON_KEY=$(echo "$STATUS_OUTPUT" | grep -i "anon key\|publishable" | head -n1 | awk '{print $NF}')
+
+          # Fallback: try direct format
+          if [ -z "$SUPABASE_URL" ]; then
+            export SUPABASE_URL="http://127.0.0.1:54321"
+          fi
 
           echo "Testing Edge Functions..."
           echo "SUPABASE_URL: $SUPABASE_URL"
           echo "SUPABASE_ANON_KEY length: ${#SUPABASE_ANON_KEY}"
 
           # Verify we got the API key
-          if [ -z "$SUPABASE_ANON_KEY" ]; then
-            echo "❌ Failed to get SUPABASE_ANON_KEY from status"
-            supabase status
+          if [ -z "$SUPABASE_ANON_KEY" ] || [ ${#SUPABASE_ANON_KEY} -lt 20 ]; then
+            echo "❌ Failed to get valid SUPABASE_ANON_KEY from status"
+            echo "Status output was:"
+            echo "$STATUS_OUTPUT"
             exit 1
           fi
 
@@ -171,7 +197,11 @@ jobs:
             echo "Tests failed, checking database state..."
             docker exec supabase_db_supabase-template psql -U postgres -d postgres -c "SELECT email, created_at, email_confirmed_at FROM auth.users WHERE email LIKE '%@example.com';" || echo "Could not query auth.users"
             echo ""
-            docker logs supabase_db_supabase-template 2>&1 | tail -100
+            echo "Checking auth logs..."
+            docker logs supabase_auth_supabase-template 2>&1 | tail -50
+            echo ""
+            echo "Checking edge-runtime logs..."
+            docker logs $(docker ps -q -f name=edge-runtime) 2>&1 | tail -50 || echo "No edge-runtime logs available"
             exit $TEST_EXIT_CODE
           fi
 

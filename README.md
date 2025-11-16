@@ -7,11 +7,18 @@ project/
 ├── .github/
 │   └── workflows/        # CI/CD workflows
 ├── supabase/
-│   ├── migrations/       # Database migrations
-│   ├── seed.sql          # Seed data
+│   ├── functions/        # Edge Functions (Deno)
+│   │   ├── admin-create-user/
+│   │   ├── admin-list-users/
+│   │   ├── admin-update-user/
+│   │   ├── admin-delete-user/
+│   │   ├── import_map.json
+│   │   └── test-functions.ts
+│   ├── migrations/       # Database migrations (00000-00006)
+│   ├── seed.sql          # Seed data with proper auth schema
 │   └── config.toml       # Supabase configuration
-├── docs/                 # Documentation (ordered guides)
 ├── package.json          # npm scripts
+├── CLAUDE.md             # AI assistant guidance
 ├── .gitignore
 └── README.md
 ```
@@ -41,9 +48,15 @@ npm run seed
 ```
 
 **Test Users:**
-- `alice@example.com` / `password123`
-- `bob@example.com` / `password123`
-- `carol@example.com` / `password123`
+- `alice@example.com` / `password123` (Admin user)
+- `bob@example.com` / `password123` (Regular user)
+- `carol@example.com` / `password123` (Regular user)
+
+**Features:**
+- ✅ Passwords hashed with PostgreSQL `crypt()` + bcrypt
+- ✅ All GoTrue auth columns properly configured
+- ✅ Email auto-confirmed, ready to login immediately
+- ✅ Admin permissions set for alice (can use Edge Functions)
 
 ## Development Commands
 
@@ -92,29 +105,69 @@ npm run seed
 Once running (`npm run dev`), services are available at:
 
 - **API Gateway**: http://localhost:54321 (all services route through here)
-- **Database**: Check `npm run status` for connection string
+- **Edge Functions**: http://localhost:54321/functions/v1/
+- **Database**: Check `npm run status` for connection string (port 54322)
+- **Studio UI**: http://localhost:54323
 - **Email UI (Inbucket)**: http://localhost:54324
+
+## Edge Functions
+
+This template includes **admin API functions** built with Deno:
+
+- **admin-create-user** - Create new users (requires admin)
+- **admin-list-users** - List all users (requires admin)
+- **admin-update-user** - Update user profiles (requires admin)
+- **admin-delete-user** - Delete users (requires admin)
+
+**Testing Edge Functions:**
+```bash
+# The test suite is automatically run in CI
+# To run manually (requires Supabase running):
+deno run --allow-net --allow-env supabase/functions/test-functions.ts
+```
+
+All functions:
+- Require Bearer token authentication
+- Verify admin role via `profiles.is_admin`
+- Return JSON with CORS headers
+- Auto-served by `supabase start`
 
 ## CI/CD Workflows
 
 ### Main CI (`ci.yml`)
-- **Multi-platform testing**: Ubuntu, Windows, macOS
-- **Automated Docker setup**: Uses `docker/setup-docker-action` for cross-platform compatibility
-- **Database testing**: Runs migrations, checks diff, and validates data
-- **Health checks**: Tests API endpoints and database connectivity
-- **Dogfooding**: Uses same npm commands as local development
+**Runs on:** `ubuntu-latest` (Docker pre-installed)
 
-The workflow includes an optional health check step that verifies:
-- API services are responding
-- Database tables are accessible
-- Seed data is loaded correctly
+**Comprehensive testing pipeline:**
+1. ✅ Sets up Node.js 20, Supabase CLI, and Deno
+2. ✅ Starts all Supabase services
+3. ✅ Applies database migrations
+4. ✅ Seeds test data with proper auth schema
+5. ✅ **Waits for services** - 15s + health checks
+6. ✅ Verifies auth service is ready (10 retries, 3s intervals)
+7. ✅ Confirms seeded users exist in database
+8. ✅ Tests Edge Functions endpoint accessibility
+9. ✅ **Runs Edge Functions test suite** with Deno
+10. ✅ Validates admin authentication and permissions
+11. ✅ Shows comprehensive logs on failure
 
-Users can remove the health check step if not needed.
+**Key improvements:**
+- Robust environment variable parsing (case-insensitive, fallbacks)
+- Service health checks prevent race conditions
+- Auth service readiness verification after `db reset`
+- Edge Functions auto-served and tested
+- Detailed error diagnostics with auth/edge-runtime logs
 
-### Angular Integration (`angular-integration.yml`)
-- Only runs when frontend/ or supabase/ directories change
-- Tests Angular app build and unit tests
-- Validates integration with Supabase backend
+**Test Coverage:**
+- ✅ Database schema (migrations)
+- ✅ Authentication (login with seeded users)
+- ✅ Edge Functions (all admin endpoints)
+- ✅ Security (unauthorized/non-admin access prevention)
+- ✅ Data integrity (profiles, posts, follows)
+
+### Deployment (`deploy.yml`)
+- Manual trigger only
+- Deploys migrations to production
+- Requires `SUPABASE_ACCESS_TOKEN` and `PROJECT_ID`
 
 ## Architecture
 
@@ -141,25 +194,39 @@ This setup uses Supabase CLI which automatically manages:
 - Generate TypeScript types with `npm run types`
 - Link to production with `npm run link`
 
-## Documentation
-
-Comprehensive guides are available in the `docs/` folder:
-
-1. **[Getting Started](./docs/01_GETTING_STARTED.md)** - Installation, setup, and first steps
-2. **[Migrations](./docs/02_MIGRATIONS.md)** - Database migrations and schema management
-3. **[CI/CD](./docs/03_CI_CD.md)** - GitHub Actions workflows and automation
-4. **[Deployment](./docs/04_DEPLOYMENT.md)** - Production deployment guide
-5. **[Frontend Integration](./docs/05_FRONTEND_INTEGRATION.md)** - Add Angular frontend to the template
-
-📖 **[View all documentation](./docs/README.md)**
-
 ## What You Get
 
 ✅ **Cross-platform**: Works on Windows, Mac, and Linux
 ✅ **Docker-based**: Local development with all Supabase services
-✅ **Version-controlled migrations**: Track database changes in git
-✅ **Seed data**: Test users and data for development
-✅ **Multi-platform CI/CD**: Automated testing on Ubuntu, Windows, macOS
-✅ **Health checks**: Automated API and database validation
-✅ **Production ready**: Deploy to Supabase with one command
-✅ **Well documented**: Comprehensive guides for every feature
+✅ **Version-controlled migrations**: 7 migrations tracking schema evolution
+✅ **Proper auth schema**: All GoTrue columns configured correctly
+✅ **Edge Functions**: Admin API with Deno + comprehensive tests
+✅ **Seed data**: Test users with bcrypt passwords, ready to login
+✅ **Robust CI/CD**: Health checks, service verification, error diagnostics
+✅ **Production ready**: Deploy migrations with one command
+✅ **Admin system**: Role-based access control with `is_admin` flag
+✅ **Battle-tested**: All CI issues resolved, fully passing tests
+
+## Troubleshooting
+
+### Authentication Issues
+If login fails with "Invalid credentials":
+- Run `npm run seed` to recreate users with proper password hashing
+- Verify `pgcrypto` extension is enabled
+- Check auth.users columns are non-NULL (see CLAUDE.md)
+
+### CI/CD Issues
+If GitHub Actions fails:
+- Check auth service logs in workflow output
+- Verify Edge Functions are in `supabase/functions/`
+- Ensure Deno is set up (auto-handled by workflow)
+- Review comprehensive error logs in failed step
+
+### Edge Functions Issues
+If functions don't respond:
+- Ensure Deno is installed: `deno --version`
+- Check import_map.json exists
+- Functions auto-serve with `supabase start`
+- Test: `curl http://localhost:54321/functions/v1/admin-create-user`
+
+For more details, see **[CLAUDE.md](./CLAUDE.md)** (AI assistant guidance with full troubleshooting)

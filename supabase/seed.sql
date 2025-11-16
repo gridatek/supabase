@@ -1,6 +1,9 @@
 -- Seed file for development and testing
 -- This file is safe to run multiple times (uses upserts/checks)
 
+-- Enable pgcrypto extension for password hashing
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- ============================================
 -- SEED USERS (via auth.users)
 -- ============================================
@@ -12,7 +15,8 @@
 
 -- Insert test users into auth.users
 -- Password for all test users: "password123"
--- Hashed with bcrypt: $2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iqaG1vv..mRyS
+-- Using PostgreSQL's crypt() to generate bcrypt hash at insert time
+-- This ensures compatibility with GoTrue's password verification
 
 INSERT INTO auth.users (
     id,
@@ -42,7 +46,7 @@ INSERT INTO auth.users (
         'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::uuid,
         '00000000-0000-0000-0000-000000000000'::uuid,
         'alice@example.com',
-        '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iqaG1vv..mRyS',
+        crypt('password123', gen_salt('bf')),
         NOW(),
         '{"full_name": "Alice Johnson", "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=Alice"}',
         NOW(),
@@ -66,7 +70,7 @@ INSERT INTO auth.users (
         'b1ffbc99-9c0b-4ef8-bb6d-6bb9bd380a22'::uuid,
         '00000000-0000-0000-0000-000000000000'::uuid,
         'bob@example.com',
-        '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iqaG1vv..mRyS',
+        crypt('password123', gen_salt('bf')),
         NOW(),
         '{"full_name": "Bob Smith", "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=Bob"}',
         NOW(),
@@ -90,7 +94,7 @@ INSERT INTO auth.users (
         'c2ffbc99-9c0b-4ef8-bb6d-6bb9bd380a33'::uuid,
         '00000000-0000-0000-0000-000000000000'::uuid,
         'carol@example.com',
-        '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM1A8W9iqaG1vv..mRyS',
+        crypt('password123', gen_salt('bf')),
         NOW(),
         '{"full_name": "Carol Williams", "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=Carol"}',
         NOW(),
